@@ -250,6 +250,63 @@ details.desc p{color:#c3ccd8;font-size:14px;line-height:1.6}
 .bd-row .v{justify-self:end;font-weight:700;font-size:12.5px;padding:3px 7px;border-radius:7px;color:var(--muted);background:var(--panel2)}
 .bd-row .v.up{color:var(--up);background:rgba(22,199,132,.12)}
 .bd-row .v.down{color:var(--down);background:rgba(240,67,79,.12)}
+/* portefeuille & alertes */
+.bell{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);cursor:pointer;display:grid;place-items:center;font-size:17px;padding:0}
+.bell i{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:var(--down);color:#fff;font-size:11px;font-style:normal;font-weight:800;display:none;place-items:center;padding:0 4px}
+.bell i.on{display:grid}
+#alertsP .hbox{max-width:470px}
+.alist{display:grid;gap:8px;margin-top:8px}
+.arow{border:1px solid var(--line2);border-left:3px solid var(--hold);border-radius:10px;padding:10px 12px;background:var(--panel)}
+.arow.good{border-left-color:var(--up)}.arow.bad{border-left-color:var(--down)}
+.arow .at{font-size:11.5px;color:var(--muted);font-weight:600}
+.arow .am{font-size:13.5px;margin-top:4px;line-height:1.45;white-space:pre-line}
+.arow .aa{display:flex;gap:16px;margin-top:6px}
+.arow .aa button,.arow .aa a{background:transparent;border:0;padding:0;color:var(--brand2);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;font-family:inherit}
+.go.wide{width:100%;padding:12px;margin:8px 0 4px}
+.linkbtn{background:transparent;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px;padding:8px 0;font-family:inherit}
+.linkbtn.danger{color:var(--down)}
+.q-actions{margin-top:14px}
+.btn-follow{width:100%;border:1px solid var(--brand);background:rgba(255,90,31,.08);color:var(--text);border-radius:11px;padding:11px 14px;font-weight:700;cursor:pointer;font-size:14px;font-family:inherit}
+.btn-follow.on{border-color:var(--up);background:rgba(22,199,132,.08)}
+#pf{margin-top:22px}
+.compact #pf{display:none}
+.pf-tot{font-size:13.5px;color:var(--muted);margin:10px 0 4px;line-height:1.6}
+.pf-tot b{color:var(--text)}.pf-tot b.up{color:var(--up)}.pf-tot b.down{color:var(--down)}
+.pf-list{display:grid;gap:10px;margin-top:12px}
+.pf-row{border:1px solid var(--line);border-radius:12px;padding:2px 14px 12px;background:var(--panel2)}
+.pf-main{display:grid;grid-template-columns:1fr auto 72px;gap:10px;align-items:center;width:100%;background:transparent;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:9px 0}
+.pf-main .nm{display:flex;flex-direction:column;min-width:0}
+.pf-main .s{font-weight:700}
+.pf-main .n{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-main .p{font-weight:600;font-size:14px}
+.pf-main .v{justify-self:end;font-size:12.5px;font-weight:700}
+.pf-pos{font-size:13px;color:var(--muted);line-height:1.5}
+.pf-pos b{font-weight:700}
+.pf-warn{font-size:12.5px;color:var(--hold);margin-top:4px}
+.pf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.pf-chips span{font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:3px 7px;color:var(--muted)}
+.pf-edit{font-size:12px;background:transparent;border:1px solid var(--line2);border-radius:7px;padding:4px 9px;color:var(--text);cursor:pointer;margin-left:auto;font-family:inherit}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.62);display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+@media(min-width:640px){.modal{align-items:center;padding:20px}}
+.mbox{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--panel2);border:1px solid var(--line2);border-radius:18px 18px 0 0;padding:4px 18px 20px}
+@media(min-width:640px){.mbox{border-radius:18px}}
+.mgrp{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.mt{font-weight:700;margin-bottom:10px}
+.mt span{color:var(--muted);font-weight:400;font-size:13px}
+.mrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:480px){.mrow{grid-template-columns:1fr 1fr}.mrow label:last-child{grid-column:1/-1}}
+.mbox label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--muted)}
+.mbox input:not([type=checkbox]){background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:10px;color:var(--text);font:inherit;font-size:15px;outline:0;width:100%;min-width:0}
+.mbox input:focus{border-color:var(--brand)}
+.mline{margin-bottom:10px}
+.mbox label.mchk{flex-direction:row;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text);margin:8px 0;line-height:1.4}
+.mchk input{margin-top:2px;accent-color:var(--brand);width:18px;height:18px;flex-shrink:0}
+.mbtns{display:flex;gap:16px;align-items:center;margin-top:16px}
+.mbtns .go{padding:12px 24px;font-size:15px}
+.toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,160%);z-index:60;max-width:min(520px,calc(100vw - 24px));width:max-content;background:var(--panel2);border:1px solid var(--line2);border-left:4px solid var(--hold);border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.45;box-shadow:0 18px 40px rgba(0,0,0,.6);transition:transform .3s;cursor:pointer;white-space:pre-line}
+.toast.show{transform:translate(-50%,0)}
+.toast.good{border-left-color:var(--up)}.toast.bad{border-left-color:var(--down)}
 .err{text-align:center;padding:30px 18px}
 .err .ic{font-size:34px}
 .err h2{margin:10px 0 6px;font-size:20px}
@@ -267,8 +324,12 @@ footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--dim);fon
       <span class="word">Furious<b>X</b></span>
     </a>
     <div class="markets" id="markets"></div>
+    <button type="button" class="bell" id="bellBtn" aria-label="Alertes">🔔<i id="bellN"></i></button>
   </div>
 </header>
+<div class="hours" id="alertsP"><div class="wrap"><div class="hbox" id="abox"></div></div></div>
+<div class="modal" id="pfModal"></div>
+<div class="toast" id="toast"></div>
 <div class="hours" id="hours"><div class="wrap"><div class="hbox" id="hbox"></div></div></div>
 
 <main class="wrap">
@@ -290,6 +351,7 @@ footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--dim);fon
     <div class="chips" id="quick"></div>
     <div class="help">Écrire le symbole : États-Unis <code>AAPL</code> · Paris <code>MC.PA</code> · Francfort <code>SAP.DE</code> · Amsterdam <code>ASML.AS</code> · Londres <code>SHEL.L</code> · Hong Kong <code>0700.HK</code> · Tokyo <code>7203.T</code> · BRVM <code>SNTS</code> ou « Sonatel » — ou tapez simplement le nom de l’entreprise.</div>
   </section>
+  <section id="pf"></section>
   <section id="board"></section>
   <section id="out" aria-live="polite"></section>
 </main>
@@ -317,7 +379,7 @@ function nf(x, d = 2) {
   if (!ok(x)) return '—';
   return x.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
-function px(x) { if (!ok(x)) return '—'; const a = Math.abs(x); if (S.data && S.data.currency === 'XOF' && a >= 10) return nf(x, 0); return nf(x, a >= 1 ? 2 : a >= 0.01 ? 4 : 6); }
+function px(x) { if (!ok(x)) return '—'; const a = Math.abs(x); if (a === 0) return nf(0, S.data && S.data.currency === 'XOF' ? 0 : 2); if (S.data && S.data.currency === 'XOF' && a >= 10) return nf(x, 0); return nf(x, a >= 1 ? 2 : a >= 0.01 ? 4 : 6); }
 function pct(x, d = 2, sign = true) { if (!ok(x)) return '—'; return (sign && x > 0 ? '+' : '') + nf(x * 100, d) + ' %'; }
 function big(x) {
   if (!ok(x)) return '—';
@@ -603,15 +665,67 @@ function showSugg(items) {
   $('#sugg').innerHTML = items.map((x, i) => `<button type="button" role="option" data-i="${i}"><span class="s-sym num">${esc(x.symbol)}</span><span class="s-name">${esc(x.name)}</span><span class="s-ex">${esc(x.exch)}${x.type ? ' · ' + esc(x.type) : ''}</span></button>`).join('');
   $('#sugg').classList.add('show');
 }
+const plainW = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+function localSugg(q) { // suggestions BRVM immédiates, sans attendre le réseau
+  if (!B.data) return [];
+  const k = plainW(q); if (k.length < 2) return [];
+  return B.data.items.filter((x) => plainW(x.symbol).startsWith(k.replace(/\s/g, '')) || plainW(x.name).startsWith(k) || plainW(x.name).split(' ').some((w) => w.startsWith(k)))
+    .slice(0, 6).map((x) => ({ symbol: x.symbol, name: x.name, exch: 'BRVM', type: 'Action' }));
+}
+let autoTimer = null;
+function autoPick(q, items) { // le nom tapé désigne une seule société ? → on lance l'analyse sans clic
+  const k = plainW(q); if (k.length < 3) return null;
+  const exact = items.find((x) => plainW(x.symbol).replace(/\s/g, '') === k.replace(/\s/g, ''));
+  if (exact) return exact;
+  if (k.length < 4) return null;
+  const cands = items.filter((x) => { const n = plainW(x.name); return n === k || n.startsWith(k + ' '); });
+  return new Set(cands.map((x) => plainW(x.name))).size === 1 ? cands[0] : null;
+}
+function scheduleAuto(q, items) {
+  clearTimeout(autoTimer);
+  const pick = autoPick(q, items);
+  if (!pick) return;
+  prefetch(pick.symbol);
+  autoTimer = setTimeout(() => {
+    if ($('#q').value.trim() !== q) return;
+    if (S.data && S.data.symbol === pick.symbol && document.body.classList.contains('compact')) return hideSugg();
+    $('#q').value = pick.symbol; load(pick.symbol);
+  }, 900);
+}
 async function fetchSugg(q) {
   if (sugCtrl) sugCtrl.abort();
   sugCtrl = new AbortController();
   try {
     const r = await fetch('/api/stock?suggest=' + encodeURIComponent(q), { signal: sugCtrl.signal });
     const j = await r.json();
-    if ($('#q').value.trim() === q) showSugg(j.items || []);
+    if ($('#q').value.trim() !== q) return;
+    const items = j.items || [];
+    showSugg(items);
+    scheduleAuto(q, items);
   } catch (e) {}
 }
+
+/* ---------------- réseau : petit cache + préchargement ---------------- */
+const NETC = new Map();
+function getJSON(url, maxAge = 25000) {
+  const c = NETC.get(url);
+  if (c && Date.now() - c.at < maxAge) return c.p;
+  const p = (async () => {
+    let r;
+    try { r = await fetch(url); } catch (e) { throw new Error('NET'); }
+    const txt = await r.text();
+    let j;
+    try { j = JSON.parse(txt); } catch (e) { throw new Error('NOFN'); }
+    if (!r.ok || j.error) throw new Error(j.error || 'Erreur ' + r.status);
+    return j;
+  })();
+  NETC.set(url, { at: Date.now(), p });
+  p.catch(() => NETC.delete(url));
+  if (NETC.size > 40) NETC.delete(NETC.keys().next().value);
+  return p;
+}
+const quickURL = (q) => '/api/stock?q=' + encodeURIComponent(q) + '&fast=1';
+function prefetch(sym) { getJSON(quickURL(sym)).catch(() => {}); }
 
 /* ---------------- chargement ---------------- */
 async function load(q, opt = {}) {
@@ -624,12 +738,8 @@ async function load(q, opt = {}) {
   if (!opt.silent) renderLoading();
   else { const b = $('#refresh'); if (b) b.classList.add('spin'); }
   try {
-    let r, j;
-    try { r = await fetch('/api/stock?q=' + encodeURIComponent(q)); }
-    catch (e) { throw new Error('NET'); }
-    const txt = await r.text();
-    try { j = JSON.parse(txt); } catch (e) { throw new Error('NOFN'); }
-    if (!r.ok || j.error) throw new Error(j.error || 'Erreur ' + r.status);
+    // 1er temps : réponse rapide (BRVM : 6 mois) ; 2e temps : analyse complète en arrière-plan
+    const j = await getJSON(quickURL(q), opt.silent ? 0 : 25000);
     if (!j.history || !j.history.c || j.history.c.length < 2) throw new Error('Données insuffisantes pour cette action.');
     const keepRange = S.data && S.data.symbol === j.symbol;
     S.data = j;
@@ -640,6 +750,7 @@ async function load(q, opt = {}) {
     remember(j.symbol, j.name);
     if (location.hash.slice(1) !== encodeURIComponent(j.symbol)) history.replaceState(null, '', '#' + encodeURIComponent(j.symbol));
     document.title = `${j.symbol} ${px(j.price)} — FuriousX`;
+    if (j.partial) completeLoad(j.symbol, t0);
   } catch (e) {
     if (!opt.silent) renderError(q, e.message);
   } finally {
@@ -648,6 +759,16 @@ async function load(q, opt = {}) {
   }
 }
 
+async function completeLoad(sym, t0) {
+  try {
+    const full = await getJSON('/api/stock?q=' + encodeURIComponent(sym), 60000);
+    if (!S.data || S.data.symbol !== full.symbol || !full.history || full.history.c.length < 2) return;
+    const y = window.scrollY;
+    S.data = full; S.liveAt = Date.now();
+    prep(); render(performance.now() - t0);
+    window.scrollTo(0, y);
+  } catch (e) {}
+}
 function renderLoading() {
   $('#out').innerHTML = `<div class="grid">
     <div class="card"><div class="skel" style="height:22px;width:40%"></div><div class="skel" style="height:28px;width:75%;margin-top:12px"></div><div class="skel" style="height:48px;width:55%;margin-top:18px"></div><div class="skel" style="height:64px;margin-top:18px"></div></div>
@@ -686,7 +807,8 @@ function render(ms) {
     <div class="q-xof num" id="qXof"></div>
     <div class="q-meta" id="qStatus"></div>
     <div class="stats" id="qStats"></div>
-    <div class="speed">⚡ Analyse complète en <b class="num">${nf(ms / 1000, 2)} s</b> · ${n} séances étudiées</div>
+    <div class="q-actions"><button type="button" class="btn-follow" id="followBtn"></button></div>
+    <div class="speed">${d.partial ? `⚡ Cours affiché en <b class="num">${nf(ms / 1000, 2)} s</b> · ⏳ chargement de 3 ans d’historique et des actualités…` : `⚡ Analyse complète en <b class="num">${nf(ms / 1000, 2)} s</b> · ${n} séances étudiées`}</div>
   </div>`;
 
   const chart = `<div class="card span2">
@@ -703,6 +825,7 @@ function render(ms) {
     ${tilesCard()}${analystCard()}${newsCard()}${profileCard()}</div>`;
 
   updateQuote(null);
+  renderFollowBtn();
   renderSignal();
   drawCharts();
 }
@@ -1007,17 +1130,29 @@ function endHover() { S.hover = null; const t = $('#tip'); if (t) t.style.displa
 document.addEventListener('click', (e) => {
   const bsort = e.target.closest('[data-bs]');
   if (bsort) { B.sort = bsort.dataset.bs; document.querySelectorAll('#bdSort button').forEach((b) => b.classList.toggle('on', b === bsort)); renderBoardList(); return; }
+  if (e.target.closest('#bellBtn')) { toggleAlerts(); return; }
+  if (e.target.closest('#alertsClose')) { toggleAlerts(false); return; }
+  if (e.target.closest('#notifOn')) { Notification.requestPermission().then(() => { swReg(); renderAlerts(); }); return; }
+  if (e.target.closest('#alClear')) { AL.list = []; AL.unread = 0; alSave(); renderBell(); renderAlerts(); return; }
+  if (e.target.closest('#followBtn')) { if (S.data) openPF(S.data.symbol); return; }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) { openPF(ed.dataset.edit); return; }
+  if (e.target.closest('[data-mclose]') || e.target.id === 'pfModal') { closePF(); return; }
+  if (e.target.closest('#fSave')) { savePF(); return; }
+  if (e.target.closest('#fDel')) { deletePF(); return; }
+  if (e.target.closest('#pfModal')) return;
+  if (!e.target.closest('#abox')) toggleAlerts(false);
   if (e.target.closest('#hoursClose')) { toggleHours(false); return; }
   if (e.target.closest('#markets')) { toggleHours(); return; }
   if (!e.target.closest('#hbox')) toggleHours(false);
   const chip = e.target.closest('[data-sym]');
-  if (chip) { e.preventDefault(); $('#q').value = chip.dataset.sym; load(chip.dataset.sym); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (chip) { e.preventDefault(); toggleAlerts(false); $('#toast').classList.remove('show'); $('#q').value = chip.dataset.sym; load(chip.dataset.sym); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const rg = e.target.closest('#ranges button');
   if (rg) { S.range = rg.dataset.r; S.hover = null; document.querySelectorAll('#ranges button').forEach((b) => b.classList.toggle('on', b === rg)); drawCharts(); return; }
   const hz = e.target.closest('#hz button');
   if (hz) { S.horizon = +hz.dataset.h; renderSignal(); return; }
   if (e.target.closest('#refresh')) { if (S.data) load(S.data.symbol, { silent: true }); return; }
-  if (e.target.closest('#home')) { document.body.classList.remove('compact'); $('#out').innerHTML = ''; S.data = null; history.replaceState(null, '', location.pathname); document.title = 'FuriousX — Analyse boursière instantanée'; $('#q').value = ''; loadBoard(); return; }
+  if (e.target.closest('#home')) { document.body.classList.remove('compact'); $('#out').innerHTML = ''; S.data = null; history.replaceState(null, '', location.pathname); document.title = 'FuriousX — Analyse boursière instantanée'; $('#q').value = ''; renderPF(); loadBoard(); return; }
   const sb = e.target.closest('#sugg button');
   if (sb) { const it = sugItems[+sb.dataset.i]; $('#q').value = it.symbol; load(it.symbol); return; }
   if (!e.target.closest('#sform')) hideSugg();
@@ -1030,9 +1165,11 @@ $('#sform').addEventListener('submit', (e) => {
 });
 $('#q').addEventListener('input', () => {
   const v = $('#q').value.trim();
-  clearTimeout(sugTimer);
+  clearTimeout(sugTimer); clearTimeout(autoTimer);
   if (v.length < 1) return hideSugg();
-  sugTimer = setTimeout(() => fetchSugg(v), 180);
+  const loc = localSugg(v);
+  if (loc.length) { showSugg(loc); if (loc.some((x) => plainW(x.symbol) === plainW(v).replace(/\s/g, ''))) scheduleAuto(v, loc); }
+  sugTimer = setTimeout(() => fetchSugg(v), 160);
 });
 $('#q').addEventListener('keydown', (e) => {
   if (!$('#sugg').classList.contains('show')) return;
@@ -1042,6 +1179,7 @@ $('#q').addEventListener('keydown', (e) => {
     document.querySelectorAll('#sugg button').forEach((b, i) => b.classList.toggle('act', i === sugIdx));
   } else if (e.key === 'Escape') hideSugg();
 });
+document.addEventListener('pointerdown', (e) => { const b = e.target.closest && e.target.closest('#sugg button'); if (b && sugItems[+b.dataset.i]) prefetch(sugItems[+b.dataset.i].symbol); }, true);
 document.addEventListener('pointermove', (e) => { if (e.target.id === 'cvP' || e.target.id === 'cvR') onHover(e); });
 document.addEventListener('pointerdown', (e) => { if (e.target.id === 'cvP' || e.target.id === 'cvR') onHover(e); });
 document.addEventListener('pointerout', (e) => { if ((e.target.id === 'cvP' || e.target.id === 'cvR') && e.pointerType === 'mouse') endHover(); });
@@ -1142,6 +1280,8 @@ setInterval(() => {
   updateStatus();
   renderHours();
   if (tick % 15 === 0) renderMarkets();
+  if (tick % 60 === 30) pfCheck(); // cours des valeurs suivies, chaque minute
+  if (tick % 60 === 50) pfDeep(); // signal + actualités, une valeur à la fois
   if (tick % 10 === 0) tickLive(); // cours actualisé toutes les 10 s quand la bourse est ouverte
   if (!document.body.classList.contains('compact')) {
     const st = $('#bdSt'); if (st) st.innerHTML = boardStatus();
@@ -1150,7 +1290,7 @@ setInterval(() => {
   }
   if (tick % 900 === 0 && S.data && S.data.marketOpen && document.visibilityState === 'visible') load(S.data.symbol, { silent: true }); // actualités etc. toutes les 15 min
 }, 1000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { renderMarkets(); tickLive(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { renderMarkets(); tickLive(); pfCheck(); } });
 
 /* ---------------- tableau du marché BRVM ---------------- */
 const B = { data: null, sort: 'var', loading: false, at: 0 };
@@ -1205,9 +1345,300 @@ function renderBoardList() {
 }
 document.addEventListener('input', (e) => { if (e.target.id === 'bdFilter') renderBoardList(); });
 
+/* ---------------- portefeuille & alertes ---------------- */
+const PF = { items: store('fx_pf') || [] };
+const AL = { list: store('fx_alerts') || [], unread: store('fx_unread') || 0 };
+const pfSave = () => store('fx_pf', PF.items);
+const alSave = () => { store('fx_alerts', AL.list.slice(0, 80)); store('fx_unread', AL.unread); };
+const pfFind = (sym) => PF.items.find((x) => x.symbol === sym);
+const pfKey = (it) => (it.exch === 'BRVM' ? it.symbol + '@BRVM' : it.symbol);
+function numFr(x) { let t = String(x ?? '').replace(/[\s  %]/g, ''); if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.'); const v = parseFloat(t); return isFinite(v) ? v : NaN; }
+function fmtP(x, cur) {
+  if (!ok(x)) return '—';
+  if (cur === 'XOF') return nf(x, 0) + ' FCFA';
+  const a = Math.abs(x);
+  return nf(x, a >= 1 || a === 0 ? 2 : 4) + (cur ? ' ' + curLabel(cur) : '');
+}
+const sgn = (x) => (x > 0 ? '+' : '');
+
+// --- actualités : repérer ce qui peut faire bouger le cours ---
+const NEWS_CAT = [
+  ['Dirigeants', /(\b(ceo|cfo|coo|pdg|dg|pca|chairman|chairwoman)\b|président du conseil|president du conseil|président-directeur|directeur général|directrice générale|directeur general|conseil d.administration|\bboard\b|nomination|nommé|nomme |appoint|names new|démission|demission|resign|steps? down|succession|limog|ousted|remplac)/i],
+  ['Résultats', /(résultat|resultat|results|earnings|bénéfice|benefice|profit|chiffre d.affaires|revenue|\bsales\b|trimestr|quarter|semestr|guidance|prévision|prevision|outlook|forecast|\bperte|\bloss)/i],
+  ['Actionnaires', /(dividend|rachat d.actions|buyback|\bsplit\b|augmentation de capital|capital increase|share offering|stock offering|émission d.actions|emission d.actions|introduction en bourse|\bipo\b)/i],
+  ['Opérations', /(acquisition|acquiert|rachète|rachete|fusion|merger|takeover|rapprochement|cession|partenariat|partnership|alliance|contrat|contract|agreement)/i],
+  ['Justice & régulation', /(enquête|enquete|investigation|probe|procès|\bproces\b|lawsuit|\bsued\b|poursuite|sanction|amende|\bfine[sd]?\b|régulat|regulat|\bsec\b|antitrust|fraude|fraud|plainte|suspension|suspend|recall|rappel de produit|\bban(s|ned)?\b)/i],
+  ['Analystes', /(upgrade|downgrade|relève son|releve son|abaisse|objectif de cours|price target|\brating|recommandation|outperform|underperform)/i],
+];
+const NEWS_POS = /(hausse|record|\bbond|progress|croissance|\bbeats?\b|dépasse|depasse|surpass|upgrade|relève|releve|augment|\braises?\b|\bsoar|\bjump|surge|rally|\bgains?\b|rachat d.actions|buyback|remporte|\bwins?\b|approuv|approval|optimis)/i;
+const NEWS_NEG = /(baisse|chute|plonge|recul|\bperte|\bloss|\bmiss(es)?\b|downgrade|abaisse|\bcuts?\b|réduit|reduit|démission|demission|resign|steps? down|enquête|enquete|investigation|probe|lawsuit|procès|amende|\bfine[sd]?\b|fraud|suspend|recall|warning|avertissement|plunge|\bfalls?\b|\bdrops?\b|slump|tumble|\bdelay|retard|annul|cancel|déficit|deficit|concern|inquiét|inquiet|worr)/i;
+function classifyNews(t) {
+  const cats = NEWS_CAT.filter(([, re]) => re.test(t)).map(([c]) => c);
+  if (!cats.length) return null;
+  const p = NEWS_POS.test(t), n = NEWS_NEG.test(t);
+  return { cat: cats[0], dir: p && !n ? '↑ plutôt favorable' : n && !p ? '↓ plutôt défavorable' : 'incertain', lvl: p && !n ? 'good' : n && !p ? 'bad' : 'warn' };
+}
+
+// --- déclenchement d'une alerte ---
+let swRegP = null;
+function swReg() {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return Promise.resolve(null);
+  if (!swRegP) swRegP = navigator.serviceWorker.register('/api/stock?sw=1', { scope: '/api/' }).catch(() => null);
+  return swRegP;
+}
+async function notify(a) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const title = `FuriousX · ${a.symbol}`;
+    const opt = { body: a.msg, tag: a.kind + '-' + a.symbol, renotify: true, data: { url: '/#' + encodeURIComponent(a.symbol) }, vibrate: [200, 100, 200] };
+    const reg = await swReg();
+    if (reg && reg.active) await reg.showNotification(title, opt);
+    else new Notification(title, opt);
+  } catch (e) {}
+}
+function beep() {
+  try {
+    if (document.visibilityState !== 'visible') return;
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    const c = beep.c || (beep.c = new C()), o = c.createOscillator(), g = c.createGain();
+    o.frequency.value = 880; g.gain.setValueAtTime(0.0001, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.15, c.currentTime + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.35);
+    o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.4);
+  } catch (e) {}
+}
+function toastMsg(html, lvl, sym) {
+  const t = $('#toast'); if (!t) return;
+  t.className = 'toast show ' + (lvl || ''); t.innerHTML = html;
+  if (sym) t.dataset.sym = sym; else delete t.dataset.sym;
+  clearTimeout(toastMsg.tm); toastMsg.tm = setTimeout(() => t.classList.remove('show'), 8000);
+}
+function fireAlert(it, kind, msg, level, link) {
+  const a = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 6), at: Date.now(), symbol: it.symbol, name: it.name, kind, msg, level: level || 'warn', link: link || null };
+  AL.list.unshift(a); AL.list = AL.list.slice(0, 80); AL.unread++;
+  alSave(); renderBell(); renderAlerts();
+  notify(a); beep();
+  toastMsg(`<b>${esc(a.symbol)}</b> · ${esc(a.msg)}`, a.level, a.symbol);
+}
+
+// --- règles d'alerte sur le cours ---
+function evalAlerts(it, q) {
+  const p = q.price; if (!ok(p)) return;
+  it.last = { price: p, prev: ok(q.prevClose) ? q.prevClose : (it.last && it.last.prev), at: Date.now() };
+  if (!ok(it.peak) || p > it.peak) it.peak = p;
+  const A = it.alerts || {}, F = it.fired || (it.fired = {}), cur = it.currency;
+  if (ok(A.target)) {
+    if (p >= A.target && !F.target) { F.target = 1; fireAlert(it, 'target', `🎯 Objectif atteint : ${fmtP(p, cur)} (objectif ${fmtP(A.target, cur)}).${ok(it.buyPrice) ? ` Plus-value : ${pct(p / it.buyPrice - 1, 1)}.` : ''} Pensez à sécuriser tout ou partie de vos gains.`, 'good'); }
+    else if (p < A.target * 0.98) F.target = 0;
+  }
+  if (ok(A.stop)) {
+    if (p <= A.stop && !F.stop) { F.stop = 1; fireAlert(it, 'stop', `🛑 Stop atteint : ${fmtP(p, cur)} (seuil ${fmtP(A.stop, cur)}).${ok(it.buyPrice) ? ` Résultat : ${pct(p / it.buyPrice - 1, 1)}.` : ''} Décidez si vous limitez la perte.`, 'bad'); }
+    else if (p > A.stop * 1.02) F.stop = 0;
+  }
+  if (ok(A.trail) && ok(it.peak)) {
+    const lvl = it.peak * (1 - A.trail / 100);
+    if (p <= lvl && F.trailPeak !== it.peak) {
+      F.trailPeak = it.peak;
+      const g = ok(it.buyPrice) ? p / it.buyPrice - 1 : NaN;
+      const tail = !ok(g) ? '' : g > 0 ? ` Vous êtes encore en plus-value de ${pct(g, 1)}${ok(it.qty) ? ` (${sgn(g)}${fmtP((p - it.buyPrice) * it.qty, cur)})` : ''} : c’est le moment d’envisager de sécuriser vos gains.` : ` Vous êtes maintenant en moins-value de ${pct(g, 1)}.`;
+      fireAlert(it, 'trail', `📉 Recul de ${pct(1 - p / it.peak, 1, false)} depuis le plus haut (${fmtP(it.peak, cur)}) : ${fmtP(p, cur)}.${tail}`, g > 0 ? 'warn' : 'bad');
+    }
+  }
+  if (ok(A.move) && ok(it.last.prev) && it.last.prev > 0) {
+    const ch = p / it.last.prev - 1, tag = new Date().toISOString().slice(0, 10) + (ch > 0 ? '+' : '-');
+    if (Math.abs(ch) * 100 >= A.move && F.moveDay !== tag) {
+      F.moveDay = tag;
+      fireAlert(it, 'move', ch > 0 ? `🚀 Forte hausse aujourd’hui : ${pct(ch, 1)} à ${fmtP(p, cur)}.` : `⚠️ Forte baisse aujourd’hui : ${pct(ch, 1)} à ${fmtP(p, cur)}.`, ch > 0 ? 'good' : 'bad');
+    }
+  }
+}
+
+// --- surveillance : cours chaque minute, signal + actualités toutes les 15 min ---
+let pfBusy = false;
+async function pfCheck(force) {
+  if (pfBusy || !PF.items.length) return;
+  const anyOpen = PF.items.some((it) => { const se = session(it.tz); return !se || se.state !== 'closed'; });
+  if (!anyOpen && !force && Date.now() - (pfCheck.at || 0) < 10 * 60000) return;
+  pfBusy = true; pfCheck.at = Date.now();
+  try {
+    const j = await getJSON('/api/stock?watch=' + encodeURIComponent(PF.items.map(pfKey).join(',')), 15000);
+    for (const q of j.quotes || []) {
+      const it = PF.items.find((x) => pfKey(x) === q.key);
+      if (it && !q.error) evalAlerts(it, q);
+    }
+    pfSave(); renderPF(); renderFollowBtn();
+  } catch (e) {} finally { pfBusy = false; }
+}
+async function pfDeep() {
+  if (!PF.items.length) return;
+  const it = PF.items.slice().sort((a, b) => (a.deepAt || 0) - (b.deepAt || 0))[0];
+  if (Date.now() - (it.deepAt || 0) < 15 * 60000) return;
+  it.deepAt = Date.now(); pfSave();
+  let j;
+  try { j = await getJSON('/api/stock?q=' + encodeURIComponent(it.symbol), 60000); } catch (e) { return; }
+  if (ok(j.toXof)) it.toXof = j.toXof;
+  const H = j.history;
+  if (H && H.c && H.c.length > 25) {
+    const sc = scoreAt(H.c.length - 1, H.c, indicators(H));
+    if (sc) {
+      const k = signalOf(sc.score);
+      if (it.alerts && it.alerts.signal && it.lastSignal && it.lastSignal !== k)
+        fireAlert(it, 'signal', `🔄 Signal FuriousX : ${SIGNALS[it.lastSignal].label} → ${SIGNALS[k].label} (score ${sgn(sc.score)}${sc.score}/100). Ouvrez la fiche pour voir la fiabilité mesurée.`, k === 'buy' || k === 'acc' ? 'good' : k === 'sell' ? 'bad' : 'warn');
+      it.lastSignal = k;
+    }
+  }
+  const seen = new Set(it.seen || []), first = !it.seen;
+  let sent = 0;
+  for (const n of j.news || []) {
+    const id = n.link || n.title; if (!id || seen.has(id)) continue;
+    seen.add(id);
+    if (first || !(it.alerts && it.alerts.news) || sent >= 3) continue;
+    const c = classifyNews(n.title || '');
+    if (c && (!n.time || Date.now() / 1000 - n.time < 72 * 3600)) {
+      sent++;
+      fireAlert(it, 'news', `📰 ${c.cat} : ${n.title}\nImpact probable sur le cours : ${c.dir} (estimation automatique, à vérifier).`, c.lvl, n.link);
+    }
+  }
+  it.seen = [...seen].slice(-120); pfSave();
+}
+
+// --- affichage ---
+function renderBell() { const b = $('#bellN'); if (!b) return; b.textContent = AL.unread > 9 ? '9+' : AL.unread || ''; b.classList.toggle('on', AL.unread > 0); }
+function renderFollowBtn() {
+  const b = $('#followBtn'); if (!b || !S.data) return;
+  const it = pfFind(S.data.symbol);
+  b.textContent = it ? `🔔 Alertes actives${ok(it.qty) && ok(it.buyPrice) ? ` · ${nf(it.qty, 0)} × ${fmtP(it.buyPrice, it.currency)}` : ''} · modifier` : '⭐ Suivre cette action et créer des alertes';
+  b.classList.toggle('on', !!it);
+}
+function renderPF() {
+  const el = $('#pf'); if (!el) return;
+  if (!PF.items.length) { el.innerHTML = ''; return; }
+  let totV = 0, totC = 0, any = false;
+  const rows = PF.items.map((it) => {
+    const p = it.last && it.last.price, cur = it.currency, x = ok(it.toXof) ? it.toXof : null;
+    const ch = it.last && ok(it.last.prev) && ok(p) ? p / it.last.prev - 1 : NaN;
+    let pos = '';
+    if (ok(it.qty) && ok(it.buyPrice) && ok(p)) {
+      const gain = (p - it.buyPrice) * it.qty, gp = p / it.buyPrice - 1;
+      if (x) { totV += p * it.qty * x; totC += it.buyPrice * it.qty * x; any = true; }
+      pos = `<div class="pf-pos">${nf(it.qty, 0)} × ${fmtP(it.buyPrice, cur)} → <b class="${cls(gain)}">${sgn(gain)}${fmtP(gain, cur)} (${pct(gp, 1)})</b>${x && cur !== 'XOF' ? ` · ≈ ${sgn(gain)}${nf(gain * x, 0)} FCFA` : ''}</div>`;
+    }
+    const A = it.alerts || {}, chips = [];
+    if (ok(A.target)) chips.push(`🎯 ${fmtP(A.target, cur)}`);
+    if (ok(A.stop)) chips.push(`🛑 ${fmtP(A.stop, cur)}`);
+    if (ok(A.trail) && ok(it.peak)) chips.push(`📉 −${nf(A.trail, 0)} % du plus haut → ${fmtP(it.peak * (1 - A.trail / 100), cur)}`);
+    if (ok(A.move)) chips.push(`⚡ ±${nf(A.move, 0)} %/jour`);
+    if (A.signal) chips.push('🔄 signal');
+    if (A.news) chips.push('📰 actualités');
+    const warn = ok(p) && ok(A.trail) && ok(it.peak) && p <= it.peak * (1 - A.trail / 100)
+      ? `<div class="pf-warn">⚠️ ${pct(p / it.peak - 1, 1)} depuis le plus haut (${fmtP(it.peak, cur)})</div>` : '';
+    return `<div class="pf-row"><button type="button" class="pf-main" data-sym="${esc(it.symbol)}"><span class="nm"><span class="s num">${esc(it.symbol)}</span><span class="n">${esc(it.name)}</span></span><span class="p num">${ok(p) ? fmtP(p, cur) : '…'}</span><span class="v num ${cls(ch)}">${ok(ch) ? pct(ch, 2) : ''}</span></button>${pos}${warn}<div class="pf-chips">${chips.map((c) => `<span>${esc(c)}</span>`).join('')}<button type="button" class="pf-edit" data-edit="${esc(it.symbol)}">✏️ Modifier</button></div></div>`;
+  }).join('');
+  const tot = any && totC > 0 ? `<div class="pf-tot">Valeur totale ≈ <b class="num">${nf(totV, 0)} FCFA</b> · plus/moins-value <b class="num ${cls(totV - totC)}">${sgn(totV - totC)}${nf(totV - totC, 0)} FCFA (${pct(totV / totC - 1, 1)})</b></div>` : '';
+  el.innerHTML = `<div class="card"><div class="bd-head"><h2>Mon portefeuille</h2><span class="muted">${PF.items.length} valeur${PF.items.length > 1 ? 's' : ''} sous alerte</span></div>${tot}<div class="pf-list">${rows}</div>
+    <div class="disc">Surveillance chaque minute tant que FuriousX est ouvert. Les montants en FCFA sont approximatifs (taux du jour).</div></div>`;
+}
+function renderAlerts() {
+  const box = $('#abox'); if (!box || !$('#alertsP').classList.contains('show')) return;
+  const perm = !('Notification' in window) ? 'na' : Notification.permission;
+  const permHtml = perm === 'granted' ? '<div class="hnote up">✅ Notifications activées sur cet appareil.</div>'
+    : perm === 'denied' ? '<div class="hnote">🔕 Notifications bloquées : autorisez-les dans les réglages du site (icône à gauche de l’adresse).</div>'
+    : perm === 'na' ? '' : '<button class="go wide" id="notifOn" type="button">🔔 Activer les notifications sur cet appareil</button>';
+  const rows = AL.list.length
+    ? AL.list.slice(0, 40).map((a) => `<div class="arow ${a.level}"><div class="at">${esc(a.symbol)} · ${ago(a.at / 1000)}</div><div class="am">${esc(a.msg)}</div><div class="aa"><button type="button" data-sym="${esc(a.symbol)}">Voir l’analyse</button>${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">Lire l’article</a>` : ''}</div></div>`).join('')
+    : '<p class="empty">Aucune alerte pour l’instant. Ouvrez une action et touchez « ⭐ Suivre cette action » pour être prévenu.</p>';
+  box.innerHTML = `<div class="hhead"><div><b>Alertes</b><span>${PF.items.length} valeur${PF.items.length > 1 ? 's' : ''} surveillée${PF.items.length > 1 ? 's' : ''}</span></div><button type="button" id="alertsClose" aria-label="Fermer">✕</button></div>${permHtml}<div class="alist">${rows}</div>${AL.list.length ? '<button class="linkbtn" id="alClear" type="button">Effacer l’historique</button>' : ''}<div class="hnote">Les alertes sont vérifiées chaque minute tant que FuriousX est ouvert, sur PC ou sur le téléphone.</div>`;
+}
+function toggleAlerts(show) {
+  const h = $('#alertsP'); if (!h) return;
+  show = show === undefined ? !h.classList.contains('show') : show;
+  h.classList.toggle('show', show);
+  if (show) { AL.unread = 0; alSave(); renderBell(); renderAlerts(); toggleHours(false); }
+}
+
+// --- fenêtre « Suivre / modifier » ---
+function openPF(sym) {
+  const it = pfFind(sym), d = S.data && S.data.symbol === sym ? S.data : null;
+  if (!it && !d) return;
+  const cur = it ? it.currency : d.currency, price = d ? d.price : it.last && it.last.price;
+  const bp = it && ok(it.buyPrice) ? it.buyPrice : price;
+  const A = it ? it.alerts || {} : { target: bp * 1.10, stop: bp * 0.93, trail: 5, move: 4, signal: true, news: true };
+  const dec = cur === 'XOF' ? 0 : 2;
+  const fv = (x, n) => (ok(x) ? String(Math.round(x * 10 ** n) / 10 ** n).replace('.', ',') : '');
+  $('#pfModal').innerHTML = `<div class="mbox" role="dialog" aria-modal="true">
+    <div class="hhead"><div><b>${it ? 'Modifier le suivi' : 'Suivre'} · ${esc(sym)}</b><span>${esc(it ? it.name : d.name)} · cours ${fmtP(price, cur)}</span></div><button type="button" data-mclose aria-label="Fermer">✕</button></div>
+    <div class="mgrp"><div class="mt">Ma position <span>(facultatif)</span></div>
+      <div class="mrow">
+        <label>Quantité<input id="fQty" inputmode="decimal" placeholder="ex. 2" value="${it && ok(it.qty) ? fv(it.qty, 4) : ''}"></label>
+        <label>Prix d’achat<input id="fBuy" inputmode="decimal" value="${fv(bp, dec)}"></label>
+        <label>Date d’achat<input id="fDate" type="date" value="${it && it.buyDate ? it.buyDate : new Date().toISOString().slice(0, 10)}"></label>
+      </div></div>
+    <div class="mgrp"><div class="mt">Me prévenir si…</div>
+      <label class="mline">🎯 le cours atteint mon objectif (${esc(curLabel(cur) || 'points')})<input id="fTarget" inputmode="decimal" value="${fv(A.target, dec)}"></label>
+      <label class="mline">🛑 le cours tombe sous mon stop (${esc(curLabel(cur) || 'points')})<input id="fStop" inputmode="decimal" value="${fv(A.stop, dec)}"></label>
+      <label class="mline">📉 stop suiveur : le cours recule de (%) depuis son plus haut<input id="fTrail" inputmode="decimal" value="${fv(A.trail, 1)}"></label>
+      <label class="mline">⚡ le cours bouge de plus de (%) dans la journée<input id="fMove" inputmode="decimal" value="${fv(A.move, 1)}"></label>
+      <label class="mchk"><input type="checkbox" id="fSig" ${A.signal ? 'checked' : ''}>🔄 le signal FuriousX change (Acheter, Accumuler, Garder, Vendre)</label>
+      <label class="mchk"><input type="checkbox" id="fNews" ${A.news ? 'checked' : ''}>📰 une actualité importante paraît : dirigeants (PDG, DG, PCA), résultats, dividendes, fusions, justice</label>
+      <div class="hnote">Laissez une case vide pour désactiver l’alerte correspondante. Le stop suiveur protège vos gains : il suit le plus haut atteint depuis votre achat.</div></div>
+    <div class="mbtns"><button type="button" class="go" id="fSave">Enregistrer</button>${it ? '<button type="button" class="linkbtn danger" id="fDel">Ne plus suivre</button>' : ''}</div>
+  </div>`;
+  $('#pfModal').dataset.sym = sym;
+  $('#pfModal').classList.add('show');
+}
+function closePF() { $('#pfModal').classList.remove('show'); }
+function savePF() {
+  const sym = $('#pfModal').dataset.sym, d = S.data && S.data.symbol === sym ? S.data : null;
+  let it = pfFind(sym);
+  const created = !it;
+  if (!it && !d) return closePF();
+  const g = (id) => { const v = numFr($('#' + id).value); return ok(v) && v > 0 ? v : null; };
+  if (!it) { it = { symbol: sym, name: d.name, exch: d.exchange, currency: d.currency, tz: d.timezone, toXof: d.toXof, addedAt: Date.now() }; PF.items.push(it); }
+  const oldDate = it.buyDate;
+  it.qty = g('fQty'); it.buyPrice = g('fBuy'); it.buyDate = $('#fDate').value || null;
+  it.alerts = { target: g('fTarget'), stop: g('fStop'), trail: g('fTrail'), move: g('fMove'), signal: $('#fSig').checked, news: $('#fNews').checked };
+  const price = d ? d.price : it.last && it.last.price;
+  if (d) { it.last = { price: d.price, prev: d.prevClose, at: Date.now() }; if (ok(d.toXof)) it.toXof = d.toXof; it.tz = d.timezone; }
+  if (created || it.buyDate !== oldDate || !ok(it.peak)) { // plus haut atteint depuis l'achat
+    let peak = ok(price) ? price : null;
+    if (d && it.buyDate) {
+      const t0 = Date.parse(it.buyDate + 'T00:00:00Z') / 1000, H = d.history;
+      for (let i = 0; i < H.t.length; i++) if (H.t[i] >= t0 && ok(H.h[i])) peak = Math.max(peak ?? -Infinity, H.h[i]);
+    }
+    if (ok(it.buyPrice)) peak = Math.max(peak ?? -Infinity, it.buyPrice);
+    it.peak = ok(peak) ? peak : null;
+  }
+  // ce qui est déjà vrai à l'enregistrement s'affiche dans le portefeuille, sans alerte immédiate
+  const A = it.alerts, F = (it.fired = {}), p = price;
+  if (ok(p)) {
+    if (ok(A.target) && p >= A.target) F.target = 1;
+    if (ok(A.stop) && p <= A.stop) F.stop = 1;
+    if (ok(A.trail) && ok(it.peak) && p <= it.peak * (1 - A.trail / 100)) F.trailPeak = it.peak;
+    if (ok(A.move) && it.last && ok(it.last.prev)) { const ch = p / it.last.prev - 1; if (Math.abs(ch) * 100 >= A.move) F.moveDay = new Date().toISOString().slice(0, 10) + (ch > 0 ? '+' : '-'); }
+  }
+  if (d && S.now) it.lastSignal = signalOf(S.now.score);
+  if (d && !it.seen) it.seen = (d.news || []).map((n) => n.link || n.title);
+  it.deepAt = Date.now();
+  pfSave(); closePF(); renderFollowBtn(); renderPF(); renderAlerts();
+  toastMsg(created ? `⭐ <b>${esc(sym)}</b> ajouté : surveillance active.` : `✅ Alertes de <b>${esc(sym)}</b> mises à jour.`, 'good');
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().then(() => { swReg(); renderAlerts(); });
+}
+function deletePF() {
+  const sym = $('#pfModal').dataset.sym;
+  PF.items = PF.items.filter((x) => x.symbol !== sym);
+  pfSave(); closePF(); renderFollowBtn(); renderPF();
+  toastMsg(`${esc(sym)} n’est plus suivi.`);
+}
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'open' && e.data.url) { const h = e.data.url.split('#')[1]; if (h) location.hash = h; }
+});
+
 /* ---------------- démarrage ---------------- */
 renderMarkets();
 renderChips();
+renderBell();
+renderPF();
+if ('Notification' in window && Notification.permission === 'granted') swReg();
+setTimeout(() => pfCheck(true), 2500);
 if (location.protocol === 'file:') {
   $('#fileNotice').innerHTML = '<div class="notice">Vous consultez le fichier en local. Pour obtenir les cours en direct, ouvrez FuriousX depuis son adresse en ligne (Cloudflare Pages).</div>';
 }
