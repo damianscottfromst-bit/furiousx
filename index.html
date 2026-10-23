@@ -1562,6 +1562,7 @@ function renderPF() {
     if (ok(A.move)) chips.push(`⚡ ±${nf(A.move, 0)} %/jour`);
     if (A.signal) chips.push('🔄 signal');
     if (A.news) chips.push('📰 actualités');
+    if (A.earnings !== false) chips.push('📅 résultats');
     const warn = ok(p) && ok(A.trail) && ok(it.peak) && p <= it.peak * (1 - A.trail / 100)
       ? `<div class="pf-warn">⚠️ ${pct(p / it.peak - 1, 1)} depuis le plus haut (${fmtP(it.peak, cur)})</div>` : '';
     return `<div class="pf-row"><button type="button" class="pf-main" data-sym="${esc(it.symbol)}"><span class="nm"><span class="s num">${esc(it.symbol)}</span><span class="n">${esc(it.name)}</span></span><span class="p num">${ok(p) ? fmtP(p, cur) : '…'}</span><span class="v num ${cls(ch)}">${ok(ch) ? pct(ch, 2) : ''}</span></button>${pos}${warn}<div class="pf-chips">${chips.map((c) => `<span>${esc(c)}</span>`).join('')}<button type="button" class="pf-edit" data-edit="${esc(it.symbol)}">✏️ Modifier</button></div></div>`;
@@ -1594,7 +1595,7 @@ function openPF(sym) {
   if (!it && !d) return;
   const cur = it ? it.currency : d.currency, price = d ? d.price : it.last && it.last.price;
   const bp = it && ok(it.buyPrice) ? it.buyPrice : price;
-  const A = it ? it.alerts || {} : { target: bp * 1.10, stop: bp * 0.93, trail: 5, move: 4, signal: true, news: true };
+  const A = it ? it.alerts || {} : { target: bp * 1.10, stop: bp * 0.93, trail: 5, move: 4, signal: true, news: true, earnings: true };
   const dec = cur === 'XOF' ? 0 : 2;
   const fv = (x, n) => (ok(x) ? String(Math.round(x * 10 ** n) / 10 ** n).replace('.', ',') : '');
   $('#pfModal').innerHTML = `<div class="mbox" role="dialog" aria-modal="true">
@@ -1612,6 +1613,7 @@ function openPF(sym) {
       <label class="mline">⚡ le cours bouge de plus de (%) dans la journée<input id="fMove" inputmode="decimal" value="${fv(A.move, 1)}"></label>
       <label class="mchk"><input type="checkbox" id="fSig" ${A.signal ? 'checked' : ''}>🔄 le signal FuriousX change (Acheter, Accumuler, Garder, Vendre)</label>
       <label class="mchk"><input type="checkbox" id="fNews" ${A.news ? 'checked' : ''}>📰 une actualité importante paraît : dirigeants (PDG, DG, PCA), résultats, dividendes, fusions, justice</label>
+      <label class="mchk"><input type="checkbox" id="fEarn" ${A.earnings !== false ? 'checked' : ''}>📅 la veille des résultats et du détachement du dividende (sur Telegram)</label>
       <div class="hnote">Laissez une case vide pour désactiver l’alerte correspondante. Le stop suiveur protège vos gains : il suit le plus haut atteint depuis votre achat.</div></div>
     <div class="mbtns"><button type="button" class="go" id="fSave">Enregistrer</button>${it ? '<button type="button" class="linkbtn danger" id="fDel">Ne plus suivre</button>' : ''}</div>
   </div>`;
@@ -1628,7 +1630,7 @@ function savePF() {
   if (!it) { it = { symbol: sym, name: d.name, exch: d.exchange, currency: d.currency, tz: d.timezone, toXof: d.toXof, addedAt: Date.now() }; PF.items.push(it); }
   const oldDate = it.buyDate;
   it.qty = g('fQty'); it.buyPrice = g('fBuy'); it.buyDate = $('#fDate').value || null;
-  it.alerts = { target: g('fTarget'), stop: g('fStop'), trail: g('fTrail'), move: g('fMove'), signal: $('#fSig').checked, news: $('#fNews').checked };
+  it.alerts = { target: g('fTarget'), stop: g('fStop'), trail: g('fTrail'), move: g('fMove'), signal: $('#fSig').checked, news: $('#fNews').checked, earnings: $('#fEarn').checked };
   const price = d ? d.price : it.last && it.last.price;
   if (d) { it.last = { price: d.price, prev: d.prevClose, at: Date.now() }; if (ok(d.toXof)) it.toXof = d.toXof; it.tz = d.timezone; }
   if (created || it.buyDate !== oldDate || !ok(it.peak)) { // plus haut atteint depuis l'achat
