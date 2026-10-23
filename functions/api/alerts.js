@@ -162,6 +162,7 @@ function classifyNews(t) {
 // ---------- règles d'alerte (identiques à l'application) ----------
 function evalAlerts(it, q, out) {
   const p = q.price; if (!ok(p)) return;
+  it.lastPrice = p;
   if (!ok(it.peak) || p > it.peak) it.peak = p;
   const A = it.alerts || {}, F = it.fired || (it.fired = {}), cur = it.currency;
   const add = (kind, text, lvl) => out.push({ it, kind, text, lvl });
@@ -214,6 +215,12 @@ function deepCheck(it, j, out) {
     }
   }
   it.seen = [...seen].slice(-150);
+  // variation habituelle d'une séance (moyenne des 60 derniers jours), utile avant les résultats
+  if (j.history && j.history.c && j.history.c.length > 21) {
+    const c = j.history.c.slice(-61); let sum = 0, k = 0;
+    for (let i = 1; i < c.length; i++) if (c[i - 1] > 0) { sum += Math.abs(c[i] / c[i - 1] - 1); k++; }
+    if (k) it.dayMove = sum / k;
+  }
   // pour le résumé quotidien : taux FCFA et prochains événements
   if (ok(j.toXof)) it.toXof = j.toXof;
   const now = Date.now() / 1000, ev = j.events;
@@ -257,7 +264,7 @@ function sanitize(items) {
     return {
       symbol: c.symbol, name: str(c.name), exch: str(c.exch, 40), currency: str(c.currency, 8), tz: str(c.tz, 40),
       qty: numOrNull(c.qty), buyPrice: numOrNull(c.buyPrice), buyDate: str(c.buyDate, 10),
-      alerts: { target: numOrNull(A.target), stop: numOrNull(A.stop), trail: numOrNull(A.trail), move: numOrNull(A.move), signal: !!A.signal, news: !!A.news },
+      alerts: { target: numOrNull(A.target), stop: numOrNull(A.stop), trail: numOrNull(A.trail), move: numOrNull(A.move), signal: !!A.signal, news: !!A.news, earnings: A.earnings !== false },
       toXof: numOrNull(c.toXof), peak: numOrNull(c.peak), fired: c.fired && typeof c.fired === 'object' ? c.fired : {},
       lastSignal: SIG[c.lastSignal] ? c.lastSignal : null,
       seen: Array.isArray(c.seen) ? c.seen.filter((x) => typeof x === 'string').slice(-150).map((x) => x.slice(0, 400)) : null,
@@ -281,8 +288,14 @@ function merge(server, client) {
       };
       peak = Math.max(s.peak || 0, c.peak || 0) || null;
     }
+    // résultats / dividende déjà annoncés : liés à la date de l'événement, pas aux règles
+    const sf2 = s.fired || {}, cf2 = c.fired || {};
+    fired = Object.assign({}, fired, {
+      earn: [sf2.earn, cf2.earn].filter(Boolean).sort().pop(),
+      exdiv: [sf2.exdiv, cf2.exdiv].filter(Boolean).sort().pop(),
+    });
     const seen = s.seen || c.seen ? [...new Set([...(s.seen || []), ...(c.seen || [])])].slice(-150) : null;
-    return Object.assign(c, { fired, peak, seen, lastSignal: s.lastSignal || c.lastSignal, deepAt: s.deepAt || 0, toXof: c.toXof || s.toXof || null, nextEarnings: s.nextEarnings || null, exDiv: s.exDiv || null });
+    return Object.assign(c, { fired, peak, seen, lastSignal: s.lastSignal || c.lastSignal, deepAt: s.deepAt || 0, toXof: c.toXof || s.toXof || null, nextEarnings: s.nextEarnings || null, exDiv: s.exDiv || null, lastPrice: s.lastPrice || null, dayMove: s.dayMove || null });
   });
 }
 
@@ -306,6 +319,63 @@ function digestDue(st, now) {
   if (pr.morning && weekday(utc.wd) && utc.min >= 8 * 60 + 30 && utc.min < 12 * 60 && d.morning !== utc.ymd) return { kind: 'morning', tag: utc.ymd };
   if (pr.evening && weekday(ny.wd) && ny.min >= 16 * 60 + 15 && d.evening !== ny.ymd) return { kind: 'evening', tag: ny.ymd };
   return null;
+}
+// ---------- la veille des résultats et du détachement du dividende ----------
+function eventDay(it, ts) { // date de l'événement dans le fuseau de la bourse (date seule si l'heure n'est pas connue)
+  const dateOnly = ts % 86400 === 0;
+  return { day: dateOnly ? new Date(ts * 1000).toISOString().slice(0, 10) : tzParts(it.tz || 'UTC', new Date(ts * 1000)).ymd, dateOnly };
+}
+const dayDiff = (a, b) => Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 86400000);
+function whenTxt(it, ts, dateOnly) {
+  if (dateOnly) return '';
+  const abj = new Date(ts * 1000).toISOString().slice(11, 16).replace(':', 'h');
+  if (it.tz === 'America/New_York') {
+    const m = tzParts('America/New_York', new Date(ts * 1000)).min;
+    if (m < 570) return ` avant l’ouverture de New York (vers ${abj} à Abidjan)`;
+    if (m >= 960) return ` après la clôture de New York (vers ${abj} à Abidjan)`;
+    return ` pendant la séance (vers ${abj} à Abidjan)`;
+  }
+  return ` (vers ${abj} à Abidjan)`;
+}
+function levelsTxt(it) {
+  const A = it.alerts || {}, cur = it.currency, lv = [];
+  if (ok(A.trail) && ok(it.peak)) lv.push(`stop suiveur ${fmtP(it.peak * (1 - A.trail / 100), cur)}`);
+  if (ok(A.stop)) lv.push(`stop ${fmtP(A.stop, cur)}`);
+  if (ok(A.target)) lv.push(`objectif ${fmtP(A.target, cur)}`);
+  return lv.length ? lv.join(' · ') : '';
+}
+function positionTxt(it) {
+  if (!ok(it.qty) || !ok(it.buyPrice) || !ok(it.lastPrice)) return '';
+  const g = it.lastPrice / it.buyPrice - 1;
+  return `\nVotre position : ${nf(it.qty, 0)} × ${fmtP(it.buyPrice, it.currency)} → ${pct(g)} (${sgn(g)}${fmtP((it.lastPrice - it.buyPrice) * it.qty, it.currency)}).`;
+}
+const dot = (t) => (t.endsWith('.') ? t : t + '.');
+function eventAlerts(it, out, now) {
+  const A = it.alerts || {};
+  if (A.earnings === false) return;
+  const F = it.fired || (it.fired = {}), loc = tzParts(it.tz || 'UTC', now);
+  const due = (ts, key) => {
+    if (!ok(ts)) return null;
+    const { day, dateOnly } = eventDay(it, ts), diff = dayDiff(day, loc.ymd);
+    if (diff < 0 || diff > 1 || F[key] === day) return null;
+    if (diff === 1 && loc.min < 9 * 60) return null; // la veille, à partir de 9h (heure de la bourse)
+    F[key] = day;
+    return { diff, dateOnly };
+  };
+  const e = due(it.nextEarnings, 'earn');
+  if (e) {
+    const lv = levelsTxt(it);
+    out.push({ it, kind: 'earnings', lvl: 'warn', text:
+      dot(`📅 Résultats ${e.diff === 1 ? 'demain' : 'aujourd’hui'} : ${it.name || it.symbol} publie ses résultats ${dayFr(it.nextEarnings)}${whenTxt(it, it.nextEarnings, e.dateOnly)}`) +
+      `\nLes jours de résultats, le cours peut bouger beaucoup plus que d’habitude${ok(it.dayMove) ? ` (un jour normal : environ ±${nf(it.dayMove * 100, 1)} %)` : ''}.` +
+      positionTxt(it) + (lv ? `\nVos niveaux : ${lv}. Vérifiez qu’ils vous conviennent avant la publication.` : '') });
+  }
+  const d = due(it.exDiv, 'exdiv');
+  if (d) {
+    out.push({ it, kind: 'exdiv', lvl: 'warn', text:
+      `💰 Détachement du dividende ${d.diff === 1 ? 'demain' : 'aujourd’hui'} (${dayFr(it.exDiv)}) : à l’ouverture, le cours baisse mécaniquement d’environ le montant du dividende. Ce n’est pas une perte pour l’actionnaire, qui reçoit le dividende.` +
+      positionTxt(it) + (levelsTxt(it) ? `\nAttention : cette baisse mécanique peut déclencher vos alertes (${levelsTxt(it)}).` : '') });
+  }
 }
 const fcfa = (x, sign) => (sign && x > 0 ? '+' : '') + nf(x, 0) + ' FCFA';
 const dayFr = (t) => new Date(t * 1000).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -389,6 +459,7 @@ async function run(ctx, st) {
     const it = st.items.find((x) => pfKey(x) === key);
     if (it) evalAlerts(it, q, out);
   }
+  for (const x of st.items) eventAlerts(x, out, new Date()); // résultats / dividende la veille
   // signal + actualités : une valeur par passage (chaque valeur environ toutes les 15 min)
   const it = st.items.slice().sort((a, b) => (a.deepAt || 0) - (b.deepAt || 0))[0];
   if (it && Date.now() - (it.deepAt || 0) > 14 * 60000) {
