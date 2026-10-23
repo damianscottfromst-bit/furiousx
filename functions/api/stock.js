@@ -5,9 +5,11 @@
 //  /api/stock?q=SPCX        → analyse complète d'une action
 //  /api/stock?suggest=tesla → suggestions pendant la frappe
 //  /api/stock?live=SPCX     → mode Direct : cours + séance du jour (léger, 5 s)
+//  /api/stock?brvm=board    → tableau de toutes les actions de la BRVM + indices
 //
-//  Source des données : Yahoo Finance (endpoints publics, gratuits,
-//  cours différés d'environ 15 min selon la bourse).
+//  Sources : Yahoo Finance (bourses internationales) ;
+//            brvm.org (cours officiels BRVM), sikafinance.com (historique BRVM),
+//            Google Actualités (actualités BRVM en français).
 // =====================================================================
 
 const UA =
@@ -210,10 +212,372 @@ function shapeSummary(r) {
   };
 }
 
+// =====================================================================
+//  BRVM — Bourse Régionale des Valeurs Mobilières (Abidjan, zone UEMOA)
+// =====================================================================
+const COUNTRY = { ci: 'Côte d’Ivoire', sn: 'Sénégal', bj: 'Bénin', bf: 'Burkina Faso', ml: 'Mali', ne: 'Niger', tg: 'Togo' };
+// [symbole, nom affiché, pays, secteur, alias de recherche séparés par |]
+const BRVM_LIST = [
+  ['ABJC', 'Servair Abidjan', 'ci', 'Consommation discrétionnaire', 'SERVAIR'],
+  ['BBGC', 'Bridge Bank Group CI', 'ci', 'Services financiers', 'BRIDGE BANK|BRIDGE BANK GROUP'],
+  ['BICB', 'BIIC Bénin', 'bj', 'Services financiers', 'BIIC'],
+  ['BICC', 'BICI Côte d’Ivoire', 'ci', 'Services financiers', 'BICICI|BICI'],
+  ['BNBC', 'Bernabé CI', 'ci', 'Consommation discrétionnaire', 'BERNABE'],
+  ['BOAB', 'Bank of Africa Bénin', 'bj', 'Services financiers', 'BOA BENIN'],
+  ['BOABF', 'Bank of Africa Burkina Faso', 'bf', 'Services financiers', 'BOA BURKINA|BOA BURKINA FASO'],
+  ['BOAC', 'Bank of Africa Côte d’Ivoire', 'ci', 'Services financiers', 'BOA CI|BOA COTE D IVOIRE'],
+  ['BOAM', 'Bank of Africa Mali', 'ml', 'Services financiers', 'BOA MALI'],
+  ['BOAN', 'Bank of Africa Niger', 'ne', 'Services financiers', 'BOA NIGER'],
+  ['BOAS', 'Bank of Africa Sénégal', 'sn', 'Services financiers', 'BOA SENEGAL'],
+  ['CABC', 'Sicable CI', 'ci', 'Industriels', 'SICABLE'],
+  ['CBIBF', 'Coris Bank International', 'bf', 'Services financiers', 'CORIS|CORIS BANK'],
+  ['CFAC', 'CFAO Motors CI', 'ci', 'Consommation discrétionnaire', 'CFAO MOTORS|CFAO CI'],
+  ['CIEC', 'CIE Côte d’Ivoire', 'ci', 'Services publics', 'CIE|CIE CI'],
+  ['ECOC', 'Ecobank Côte d’Ivoire', 'ci', 'Services financiers', 'ECOBANK CI'],
+  ['ETIT', 'Ecobank Transnational (ETI)', 'tg', 'Services financiers', 'ETI|ECOBANK TRANSNATIONAL'],
+  ['FTSC', 'Filtisac CI', 'ci', 'Industriels', 'FILTISAC'],
+  ['LNBB', 'Loterie Nationale du Bénin', 'bj', 'Consommation discrétionnaire', 'LNB|LOTERIE NATIONALE DU BENIN'],
+  ['NEIC', 'NEI-CEDA CI', 'ci', 'Consommation discrétionnaire', 'NEI CEDA'],
+  ['NSBC', 'NSIA Banque CI', 'ci', 'Services financiers', 'NSIA|NSIA BANQUE'],
+  ['NTLC', 'Nestlé Côte d’Ivoire', 'ci', 'Consommation de base', 'NESTLE CI'],
+  ['ONTBF', 'Onatel Burkina Faso', 'bf', 'Télécommunications', 'ONATEL'],
+  ['ORAC', 'Orange Côte d’Ivoire', 'ci', 'Télécommunications', 'ORANGE CI|ORANGE COTE D IVOIRE'],
+  ['ORGT', 'Oragroup Togo', 'tg', 'Services financiers', 'ORAGROUP'],
+  ['PALC', 'Palm Côte d’Ivoire', 'ci', 'Consommation de base', 'PALMCI|PALM CI'],
+  ['PRSC', 'Tractafric Motors CI', 'ci', 'Consommation discrétionnaire', 'TRACTAFRIC'],
+  ['SAFC', 'Safca CI', 'ci', 'Services financiers', 'SAFCA'],
+  ['SCRC', 'Sucrivoire', 'ci', 'Consommation de base', 'SUCRIVOIRE'],
+  ['SDCC', 'Sodeci', 'ci', 'Services publics', 'SODECI'],
+  ['SDSC', 'Africa Global Logistics CI', 'ci', 'Industriels', 'AGL CI|AFRICA GLOBAL LOGISTICS'],
+  ['SEMC', 'Eviosys Packaging Siem CI', 'ci', 'Industriels', 'EVIOSYS|SIEM|CROWN SIEM'],
+  ['SGBC', 'Société Générale Côte d’Ivoire', 'ci', 'Services financiers', 'SGCI|SG CI|SOCIETE GENERALE CI'],
+  ['SHEC', 'Vivo Energy CI', 'ci', 'Énergie', 'VIVO ENERGY|VIVO ENERGY CI|SHELL CI'],
+  ['SIBC', 'Société Ivoirienne de Banque', 'ci', 'Services financiers', 'SIB'],
+  ['SICC', 'Sicor CI', 'ci', 'Consommation de base', 'SICOR'],
+  ['SIVC', 'Erium CI', 'ci', 'Industriels', 'ERIUM|AIR LIQUIDE CI'],
+  ['SLBC', 'Solibra CI', 'ci', 'Consommation de base', 'SOLIBRA'],
+  ['SMBC', 'SMB Côte d’Ivoire', 'ci', 'Énergie', 'SMB'],
+  ['SNTS', 'Sonatel Sénégal', 'sn', 'Télécommunications', 'SONATEL'],
+  ['SOGC', 'SOGB CI', 'ci', 'Consommation de base', 'SOGB'],
+  ['SPHC', 'SAPH Côte d’Ivoire', 'ci', 'Consommation de base', 'SAPH'],
+  ['STAC', 'Setao CI', 'ci', 'Industriels', 'SETAO'],
+  ['STBC', 'Sitab CI', 'ci', 'Consommation de base', 'SITAB'],
+  ['TTLC', 'TotalEnergies Marketing CI', 'ci', 'Énergie', 'TOTAL CI|TOTALENERGIES CI'],
+  ['TTLS', 'TotalEnergies Marketing Sénégal', 'sn', 'Énergie', 'TOTAL SENEGAL|TOTALENERGIES SENEGAL'],
+  ['UNLC', 'Unilever Côte d’Ivoire', 'ci', 'Consommation de base', 'UNILEVER CI'],
+  ['UNXC', 'Uniwax CI', 'ci', 'Consommation discrétionnaire', 'UNIWAX'],
+];
+const BRVM_INDEX = [
+  ['BRVMC', 'Indice BRVM Composite', 'BRVM|BRVM COMPOSITE|COMPOSITE'],
+  ['BRVM30', 'Indice BRVM 30', 'BRVM 30'],
+  ['BRVMPR', 'Indice BRVM Prestige', 'BRVM PRESTIGE|PRESTIGE'],
+];
+const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+  .replace(/[’'`´\-_.,()]/g, ' ').replace(/\s+/g, ' ').trim();
+const BRVM = new Map();
+for (const [s, n, c, sec, al] of BRVM_LIST) BRVM.set(s, { symbol: s, name: n, country: c, sector: sec, aliases: al.split('|'), index: false });
+for (const [s, n, al] of BRVM_INDEX) BRVM.set(s, { symbol: s, name: n, country: null, sector: 'Indice boursier', aliases: al.split('|'), index: true });
+
+function brvmResolve(q) {
+  const k = norm(q);
+  const m = k.match(/^(?:BRVM\s+)?([A-Z0-9]{3,7})(?:\s+BRVM)?$/);
+  if (m && BRVM.has(m[1])) return BRVM.get(m[1]);
+  const compact = k.replace(/\s/g, '');
+  if (BRVM.has(compact)) return BRVM.get(compact);
+  for (const it of BRVM.values()) {
+    if (norm(it.name) === k || it.aliases.some((a) => norm(a) === k)) return it;
+  }
+  return null;
+}
+function brvmSuggest(q) {
+  const k = norm(q); if (k.length < 2) return [];
+  const kc = k.replace(/\s/g, '');
+  const out = [];
+  for (const it of BRVM.values()) {
+    const hay = [norm(it.name), ...it.aliases.map(norm)];
+    const al = it.aliases.map(norm);
+    const score = it.symbol.startsWith(kc) ? 3 : al.some((h) => h.startsWith(k)) ? 2.5 : hay.some((h) => h.startsWith(k)) ? 2 : hay.some((h) => h.includes(k)) ? 1 : 0;
+    if (score) out.push([score, it]);
+  }
+  return out.sort((a, b) => b[0] - a[0]).slice(0, 6)
+    .map(([, it]) => ({ symbol: it.symbol, name: it.name, exch: 'BRVM', type: it.index ? 'Indice' : 'Action' }));
+}
+
+// ---------- outils de lecture ----------
+function decodeHtml(s) {
+  return String(s || '')
+    .replace(/<!\[CDATA\[|\]\]>/g, '')
+    .replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;|&#x27;|&rsquo;/g, '’')
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d)).replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+const cleanCell = (h) => decodeHtml(String(h).replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+function num(x) {
+  if (typeof x === 'number') return x;
+  let t = String(x ?? '').replace(/[\s  %+]/g, '');
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  const v = parseFloat(t);
+  return isFinite(v) ? v : NaN;
+}
+function countryFromName(name) {
+  const k = norm(name);
+  if (k.includes('COTE D IVOIRE')) return 'ci';
+  if (k.includes('SENEGAL')) return 'sn';
+  if (k.includes('BENIN')) return 'bj';
+  if (k.includes('BURKINA')) return 'bf';
+  if (k.includes('MALI')) return 'ml';
+  if (k.includes('NIGER')) return 'ne';
+  if (k.includes('TOGO')) return 'tg';
+  return 'ci';
+}
+const ymd = (ms) => new Date(ms).toISOString().slice(0, 10);
+function parseDay(s) {
+  if (s == null) return null;
+  if (typeof s === 'number') return Math.floor(s > 1e11 ? s / 1000 : s);
+  const str = String(s);
+  let m = str.match(/Date\((\d+)\)/); if (m) return Math.floor(+m[1] / 1000);
+  m = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1], 15) / 1000;
+  m = str.match(/(\d{4})-(\d{2})-(\d{2})/); if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3], 15) / 1000;
+  return null;
+}
+function brvmOpenNow() {
+  const d = new Date(), wd = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return wd >= 1 && wd <= 5 && m >= 540 && m < 900; // 9h00 – 15h00 GMT
+}
+function brvmSessionDay() { // date (15h GMT) de la dernière séance commencée
+  const d = new Date(); let wd = d.getUTCDay();
+  const m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  let t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 15) / 1000;
+  if (wd >= 1 && wd <= 5 && m >= 585) return t; // ouverture à 9h45
+  do { t -= 86400; wd = (wd + 6) % 7; } while (wd === 0 || wd === 6);
+  return t;
+}
+
+// ---------- cours du jour : brvm.org (toutes les actions en 1 requête) ----------
+let brvmTabMem = null;
+async function brvmTable() {
+  if (brvmTabMem && Date.now() - brvmTabMem.at < 55000) return brvmTabMem;
+  const r = await timeout(fetch('https://www.brvm.org/fr/cours-actions/0', {
+    headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'fr-FR,fr;q=0.9' },
+    cf: { cacheTtl: 60, cacheEverything: true },
+  }), 7000);
+  if (!r.ok) throw new Error('BRVM HTTP ' + r.status);
+  const html = await r.text();
+  const rows = [], seen = new Set();
+  for (const tr of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const td = [...tr[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => cleanCell(m[1]));
+    if (td.length < 7 || !/^[A-Z0-9]{3,7}$/.test(td[0]) || seen.has(td[0])) continue;
+    const row = { symbol: td[0], name: td[1], volume: num(td[2]), prev: num(td[3]), open: num(td[4]), close: num(td[5]), var: num(td[6]) };
+    if (!isFinite(row.close) || row.close <= 0) continue;
+    seen.add(row.symbol); rows.push(row);
+    if (!BRVM.has(row.symbol)) {
+      const nm = row.name.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+      BRVM.set(row.symbol, { symbol: row.symbol, name: nm, country: countryFromName(row.name), sector: null, aliases: [], index: false });
+    }
+  }
+  if (rows.length < 10) throw new Error('Tableau BRVM illisible');
+  brvmTabMem = { at: Date.now(), rows };
+  return brvmTabMem;
+}
+
+// ---------- historique : sikafinance (fenêtres de 90 jours) ----------
+async function sikaWindow(ticker, from, to, ttl) {
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  const key = new Request(`https://cache.furiousx.app/sika/${encodeURIComponent(ticker)}/${from}/${to}`);
+  if (cache) {
+    const hit = await cache.match(key).catch(() => null);
+    if (hit) return hit.json();
+  }
+  const r = await timeout(fetch('https://www.sikafinance.com/api/general/GetHistos', {
+    method: 'POST',
+    headers: {
+      'User-Agent': UA, 'Content-Type': 'application/json', Accept: 'application/json, text/plain, */*',
+      Origin: 'https://www.sikafinance.com', Referer: 'https://www.sikafinance.com/marches/historiques/' + ticker,
+    },
+    body: JSON.stringify({ ticker, datedeb: from, datefin: to, xperiod: '0' }),
+  }), 7000);
+  if (!r.ok) throw new Error('sika HTTP ' + r.status);
+  const j = await r.json();
+  const lst = (j && (j.lst || j.Lst || j.data)) || [];
+  const rows = [];
+  for (const o of Array.isArray(lst) ? lst : []) {
+    if (!o || typeof o !== 'object') continue;
+    const g = (k) => { for (const kk of Object.keys(o)) if (kk.toLowerCase() === k) return o[kk]; return undefined; };
+    const t = parseDay(g('date')), c = num(g('close'));
+    if (!t || !isFinite(c) || c <= 0) continue;
+    const op = num(g('open')), h = num(g('high')), l = num(g('low')), v = num(g('volume'));
+    rows.push({ t, c, o: op > 0 ? op : c, h: h > 0 ? h : c, l: l > 0 ? l : c, v: isFinite(v) ? v : 0 });
+  }
+  if (cache && rows.length) {
+    await cache.put(key, new Response(JSON.stringify(rows), {
+      headers: { 'content-type': 'application/json', 'cache-control': `public, max-age=${ttl}` },
+    })).catch(() => {});
+  }
+  return rows;
+}
+async function sikaHtml(ticker) { // secours : page « historiques » (environ 3 mois)
+  const r = await timeout(fetch('https://www.sikafinance.com/marches/historiques/' + ticker, {
+    headers: { 'User-Agent': UA, Accept: 'text/html' }, cf: { cacheTtl: 600, cacheEverything: true },
+  }), 7000);
+  if (!r.ok) throw new Error('sika page HTTP ' + r.status);
+  const html = await r.text(), rows = [];
+  for (const tr of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const td = [...tr[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => cleanCell(m[1]));
+    if (td.length < 6) continue;
+    const t = parseDay(td[0]), c = num(td[1]);
+    if (!t || !(c > 0)) continue;
+    const l = num(td[2]), h = num(td[3]), o = num(td[4]), v = num(td[5]);
+    rows.push({ t, c, l: l > 0 ? l : c, h: h > 0 ? h : c, o: o > 0 ? o : c, v: isFinite(v) ? v : 0 });
+  }
+  return rows.sort((a, b) => a.t - b.t);
+}
+async function brvmHistory(ticker, windows = 12) {
+  // fenêtres de 90 jours alignées sur le calendrier : les anciennes restent en cache 1 jour
+  const day = Math.floor(Date.now() / 86400000), k0 = Math.floor(day / 90), jobs = [];
+  for (let k = k0; k > k0 - windows; k--) {
+    const from = ymd(k * 90 * 86400000), to = ymd(Math.min(k * 90 + 89, day) * 86400000);
+    jobs.push(sikaWindow(ticker, from, to, k === k0 ? 300 : 86400));
+  }
+  const res = await Promise.allSettled(jobs);
+  const map = new Map();
+  for (const r of res) if (r.status === 'fulfilled') for (const row of r.value) map.set(row.t, row);
+  let rows = [...map.values()].sort((a, b) => a.t - b.t);
+  if (rows.length < 2) rows = await sikaHtml(ticker).catch(() => []);
+  return rows;
+}
+
+// ---------- actualités en français : Google Actualités ----------
+async function gnews(q) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=fr&gl=CI&ceid=CI:fr`;
+  const r = await timeout(fetch(url, { headers: { 'User-Agent': UA }, cf: { cacheTtl: 900, cacheEverything: true } }), 4000);
+  if (!r.ok) return [];
+  const xml = await r.text();
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 10).map((m) => {
+    const x = m[1];
+    const g = (tag) => { const mm = x.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`)); return mm ? decodeHtml(mm[1]).trim() : ''; };
+    let title = g('title');
+    const source = g('source');
+    if (source && title.endsWith(' - ' + source)) title = title.slice(0, -(source.length + 3));
+    const t = Date.parse(g('pubDate'));
+    return { title, publisher: source, link: g('link'), time: isFinite(t) ? Math.floor(t / 1000) : null, thumb: null, tickers: [] };
+  }).filter((n) => n.title && n.link);
+}
+async function brvmNews(info) {
+  if (info.index) return (await gnews('BRVM bourse Abidjan').catch(() => [])).slice(0, 8);
+  const short = info.aliases.find((a) => !a.includes(' ')) || info.name;
+  let items = await gnews(`${short} BRVM`).catch(() => []);
+  if (items.length < 3) {
+    const more = await gnews(`"${info.name}"`).catch(() => []);
+    for (const n of more) if (!items.some((x) => x.title === n.title)) items.push(n);
+  }
+  return items.sort((a, b) => (b.time || 0) - (a.time || 0)).slice(0, 8);
+}
+
+// ---------- analyse complète d'une valeur BRVM ----------
+async function analyseBRVM(info) {
+  const t0 = Date.now();
+  const ticker = info.index ? info.symbol : `${info.symbol}.${info.country}`;
+  const [tabR, histR, newsR] = await Promise.allSettled([
+    info.index ? Promise.resolve(null) : brvmTable(),
+    brvmHistory(ticker),
+    brvmNews(info),
+  ]);
+  const rows = histR.status === 'fulfilled' ? histR.value : [];
+  const row = tabR.status === 'fulfilled' && tabR.value ? tabR.value.rows.find((r) => r.symbol === info.symbol) : null;
+
+  // la séance du jour vient de brvm.org si l'historique ne l'a pas encore
+  const sess = brvmSessionDay(), last = rows[rows.length - 1];
+  if (row && last && Math.abs(last.t - sess) < 3600) {
+    last.c = row.close; last.h = Math.max(last.h, row.close); last.l = Math.min(last.l, row.close);
+    if (row.volume > 0) last.v = row.volume;
+  } else if (row && (!last || last.t < sess - 3600) && (!last || row.close !== last.c || row.volume !== last.v)) {
+    const o = row.open > 0 ? row.open : row.close;
+    rows.push({ t: sess, c: row.close, o, h: Math.max(o, row.close), l: Math.min(o, row.close), v: row.volume || 0 });
+  }
+  if (rows.length < 2) {
+    if (!row && !info.index) throw new HttpError(502, 'Les données de la BRVM ne répondent pas pour le moment. Réessayez dans un instant.');
+    throw new HttpError(502, `Historique de ${info.symbol} momentanément indisponible. Réessayez dans un instant.`);
+  }
+  const n = rows.length, lr = rows[n - 1], y1 = rows.slice(-252);
+  const price = row ? row.close : lr.c;
+  const prevClose = row && isFinite(row.var) && row.var > -100 ? row.close / (1 + row.var / 100) : rows[n - 2].c;
+  const marketOpen = brvmOpenNow(), today = Math.abs(lr.t - sess) < 3600;
+  return {
+    symbol: info.symbol,
+    name: info.name,
+    exchange: 'BRVM',
+    type: info.index ? 'INDEX' : 'EQUITY',
+    currency: info.index ? '' : 'XOF',
+    timezone: 'Africa/Abidjan',
+    price,
+    prevClose,
+    dayHigh: today ? lr.h : null,
+    dayLow: today ? lr.l : null,
+    volume: row ? row.volume : today ? lr.v : null,
+    high52: Math.max(...y1.map((r) => r.h)),
+    low52: Math.min(...y1.map((r) => r.l)),
+    marketTime: marketOpen ? Math.floor(Date.now() / 1000) : lr.t,
+    firstTrade: null,
+    marketOpen,
+    sector: info.sector,
+    industry: info.country ? COUNTRY[info.country] : 'Bourse régionale UEMOA',
+    toXof: info.index ? null : 1,
+    history: { t: rows.map((r) => r.t), h: rows.map((r) => r.h), l: rows.map((r) => r.l), c: rows.map((r) => r.c), v: rows.map((r) => r.v) },
+    intraday: null,
+    news: newsR.status === 'fulfilled' ? newsR.value : [],
+    profile: info.index ? null : { sector: info.sector, industry: null, country: COUNTRY[info.country] || null, city: null, website: null, employees: null, summary: null },
+    analysts: null,
+    fundamentals: null,
+    events: null,
+    alternatives: [...BRVM.values()].filter((x) => x.symbol !== info.symbol && x.index === info.index && x.sector === info.sector)
+      .slice(0, 4).map((x) => ({ symbol: x.symbol, name: x.name, exch: 'BRVM' })),
+    serverMs: Date.now() - t0,
+  };
+}
+
+// ---------- mode Direct BRVM ----------
+async function liveBRVM(info) {
+  const open = brvmOpenNow();
+  if (info.index) {
+    const rows = await brvmHistory(info.symbol, 2);
+    if (rows.length < 2) throw new HttpError(502, 'Indice indisponible');
+    const a = rows[rows.length - 1], b = rows[rows.length - 2];
+    return { symbol: info.symbol, price: a.c, prevClose: b.c, marketTime: open ? Math.floor(Date.now() / 1000) : null, marketOpen: open, dayHigh: null, dayLow: null, volume: null, intraday: null };
+  }
+  const tab = await brvmTable();
+  const row = tab.rows.find((r) => r.symbol === info.symbol);
+  if (!row) throw new HttpError(404, 'Cours BRVM indisponible pour ' + info.symbol);
+  return {
+    symbol: info.symbol, price: row.close,
+    prevClose: isFinite(row.var) && row.var > -100 ? row.close / (1 + row.var / 100) : null,
+    marketTime: open ? Math.floor(Date.now() / 1000) : null, marketOpen: open,
+    dayHigh: null, dayLow: null, volume: isFinite(row.volume) ? row.volume : null, intraday: null,
+  };
+}
+
+// ---------- tableau de toutes les valeurs BRVM ----------
+async function brvmBoard() {
+  const [tabR, ...idx] = await Promise.allSettled([brvmTable(), ...BRVM_INDEX.map(([s]) => brvmHistory(s, 2))]);
+  if (tabR.status !== 'fulfilled') throw new HttpError(502, 'Le site de la BRVM ne répond pas pour le moment.');
+  const items = tabR.value.rows.map((r) => {
+    const info = BRVM.get(r.symbol) || {};
+    return { symbol: r.symbol, name: info.name || r.name, country: info.country || null, sector: info.sector || null, price: r.close, open: r.open, var: r.var, volume: r.volume };
+  });
+  const indices = BRVM_INDEX.map(([s, n], i) => {
+    const r = idx[i];
+    if (r.status !== 'fulfilled' || r.value.length < 2) return null;
+    const a = r.value[r.value.length - 1], b = r.value[r.value.length - 2];
+    return { symbol: s, name: n.replace('Indice ', ''), value: a.c, var: (a.c / b.c - 1) * 100, date: a.t };
+  }).filter(Boolean);
+  return { items, indices, marketOpen: brvmOpenNow(), updated: Math.floor(tabR.value.at / 1000) };
+}
+
 // ---------- analyse complète ----------
 async function analyse(q) {
   const t0 = Date.now();
   const query = q.trim();
+  const brvmInfo = brvmResolve(query); // Sonatel, SAPH, SNTS, SPHC… → BRVM
+  if (brvmInfo) return analyseBRVM(brvmInfo);
   const guess = query.toUpperCase().replace(/\s+/g, '');
   const looksLikeTicker = /^[A-Z0-9.\-=^]{1,15}$/.test(guess);
 
@@ -328,7 +692,12 @@ async function analyse(q) {
 }
 
 // ---------- mode Direct : réponse légère, rafraîchie toutes les 5 s ----------
-async function live(symbol) {
+async function live(symbol, exchange) {
+  if (exchange === 'BRVM') {
+    const info = brvmResolve(symbol);
+    if (!info) throw new HttpError(404, 'Valeur BRVM inconnue : ' + symbol);
+    return liveBRVM(info);
+  }
   const res = await chart(symbol, '1d', '1m', 5);
   const m = res.meta;
   const s = compactSeries(res);
@@ -348,18 +717,20 @@ async function live(symbol) {
 }
 
 async function suggest(q) {
-  const s = await search(q, 8, 0);
-  return {
-    items: (s.quotes || [])
-      .filter((x) => x.symbol)
-      .slice(0, 8)
-      .map((x) => ({
-        symbol: x.symbol,
-        name: x.longname || x.shortname || x.symbol,
-        exch: x.exchDisp || x.exchange || '',
-        type: x.typeDisp || x.quoteType || '',
-      })),
-  };
+  const local = brvmSuggest(q);
+  let remote = [];
+  try {
+    const s = await search(q, 8, 0);
+    remote = (s.quotes || []).filter((x) => x.symbol).map((x) => ({
+      symbol: x.symbol,
+      name: x.longname || x.shortname || x.symbol,
+      exch: x.exchDisp || x.exchange || '',
+      type: x.typeDisp || x.quoteType || '',
+    }));
+  } catch (e) {
+    if (!local.length) throw e;
+  }
+  return { items: [...local, ...remote.filter((r) => !local.some((l) => l.symbol === r.symbol))].slice(0, 9) };
 }
 
 // ---------- point d'entrée ----------
@@ -379,8 +750,11 @@ export async function onRequestGet(context) {
     if (url.searchParams.has('live')) {
       const sym = (url.searchParams.get('live') || '').trim();
       if (!sym || sym.length > 20) throw new HttpError(400, 'Symbole manquant.');
-      body = await live(sym);
+      body = await live(sym, url.searchParams.get('x') || '');
       ttl = 5;
+    } else if (url.searchParams.has('brvm')) {
+      body = await brvmBoard();
+      ttl = 60;
     } else if (url.searchParams.has('suggest')) {
       const q = (url.searchParams.get('suggest') || '').trim();
       body = q ? await suggest(q) : { items: [] };
