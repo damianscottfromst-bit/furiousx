@@ -4,6 +4,7 @@
 //
 //  /api/stock?q=SPCX        → analyse complète d'une action
 //  /api/stock?suggest=tesla → suggestions pendant la frappe
+//  /api/stock?live=SPCX     → mode Direct : cours + séance du jour (léger, 5 s)
 //
 //  Source des données : Yahoo Finance (endpoints publics, gratuits,
 //  cours différés d'environ 15 min selon la bourse).
@@ -247,7 +248,7 @@ async function analyse(q) {
 
   // 2) intraday, FCFA, fiche société en parallèle (la fiche est facultative)
   const [iRes, xRes, sumRes] = await Promise.allSettled([
-    chart(symbol, '1d', '5m', 30),
+    chart(symbol, '1d', '1m', 15),
     toXof(meta.currency),
     timeout(summary(symbol), 3000),
   ]);
@@ -326,6 +327,26 @@ async function analyse(q) {
   };
 }
 
+// ---------- mode Direct : réponse légère, rafraîchie toutes les 5 s ----------
+async function live(symbol) {
+  const res = await chart(symbol, '1d', '1m', 5);
+  const m = res.meta;
+  const s = compactSeries(res);
+  const ctp = m.currentTradingPeriod && m.currentTradingPeriod.regular;
+  const nowS = Date.now() / 1000;
+  return {
+    symbol: m.symbol,
+    price: m.regularMarketPrice ?? (s.c.length ? s.c[s.c.length - 1] : null),
+    prevClose: m.chartPreviousClose ?? m.previousClose ?? null,
+    marketTime: m.regularMarketTime || null,
+    marketOpen: !!(ctp && nowS >= ctp.start && nowS <= ctp.end),
+    dayHigh: m.regularMarketDayHigh ?? null,
+    dayLow: m.regularMarketDayLow ?? null,
+    volume: m.regularMarketVolume ?? null,
+    intraday: s.c.length > 1 ? { t: s.t, c: s.c } : null,
+  };
+}
+
 async function suggest(q) {
   const s = await search(q, 8, 0);
   return {
@@ -355,7 +376,12 @@ export async function onRequestGet(context) {
 
   let body, status = 200, ttl = 30;
   try {
-    if (url.searchParams.has('suggest')) {
+    if (url.searchParams.has('live')) {
+      const sym = (url.searchParams.get('live') || '').trim();
+      if (!sym || sym.length > 20) throw new HttpError(400, 'Symbole manquant.');
+      body = await live(sym);
+      ttl = 5;
+    } else if (url.searchParams.has('suggest')) {
       const q = (url.searchParams.get('suggest') || '').trim();
       body = q ? await suggest(q) : { items: [] };
       ttl = 300;
