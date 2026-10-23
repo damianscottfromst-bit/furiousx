@@ -617,15 +617,19 @@ function renderSignal() {
   const pos = ((s + 100) / 200) * 100;
 
   // probabilité de hausse
+  // il faut au moins ~10 périodes indépendantes pour qu'une probabilité ait un sens
+  const nb = d.history.c.length, enough = bt.tot >= 10 * S.horizon;
   let pUp = NaN, pTxt = '';
-  if (sim.n >= 25) { pUp = sim.pUp; pTxt = `${sim.n} situations comparables`; }
-  else if (bt.tot >= 25) { pUp = bt.baseUp; pTxt = 'moyenne historique (peu de cas comparables)'; }
-  else pTxt = 'historique insuffisant';
+  if (!enough) pTxt = `historique trop court (${nb} séances)`;
+  else if (sim.n >= 30) { pUp = sim.pUp; pTxt = `${sim.n} situations comparables`; }
+  else { pUp = bt.baseUp; pTxt = 'moyenne historique (peu de cas comparables)'; }
 
   // fiabilité mesurée
   let rel;
-  if (bt.sig < 30) {
-    rel = { c: '', t: '⏳ Fiabilité pas encore mesurable', d: `Seulement ${bt.sig} signaux passés vérifiables sur ${esc(d.symbol)} à l’horizon ${hName} : c’est trop peu pour juger. Prudence accrue, surtout pour une valeur récemment cotée.` };
+  if (!enough || bt.sig < 30) {
+    rel = { c: '', t: '⏳ Fiabilité pas encore mesurable', d: !enough
+      ? `${esc(d.symbol)} ne compte que ${nb} séances de cotation : c’est trop peu pour vérifier le signal à l’horizon ${hName}. Prudence accrue, ou choisissez un horizon plus court.`
+      : `Seulement ${bt.sig} signaux passés vérifiables sur ${esc(d.symbol)} à l’horizon ${hName} : c’est trop peu pour juger. Prudence accrue.` };
   } else {
     const e = bt.edge;
     const c = e >= 0.05 ? 'good' : e >= 0.01 ? 'mid' : 'bad';
@@ -657,7 +661,7 @@ function renderSignal() {
       <div class="kpi"><div class="k">Probabilité de hausse</div><div class="v num ${ok(pUp) ? (pUp >= 0.5 ? 'up' : 'down') : ''}">${ok(pUp) ? pct(pUp, 0, false) : '—'}</div><div class="s">à ${hName} · ${pTxt}</div></div>
       <div class="kpi"><div class="k">Fourchette probable</div><div class="v num" style="font-size:16px">${st.band ? px(st.band[0]) + ' – ' + px(st.band[1]) : '—'}</div><div class="s">à ${hName}, 2 chances sur 3 (volatilité récente)</div></div>
     </div>
-    <div class="verdict">${verdict}${sim.n >= 25 && ok(sim.median) ? ` Rendement médian observé dans ces situations : <b class="num ${cls(sim.median)}">${pct(sim.median, 1)}</b>.` : ''}</div>
+    <div class="verdict">${verdict}${enough && sim.n >= 30 && ok(sim.median) ? ` Rendement médian observé dans ces situations : <b class="num ${cls(sim.median)}">${pct(sim.median, 1)}</b>.` : ''}</div>
     <div class="relia ${rel.c}"><div class="t">${rel.t}</div>${rel.d}</div>
     <div class="why">${why}</div>
     <div class="disc">Signal statistique, pas un conseil en investissement. Aucun modèle ne prédit la bourse à coup sûr : FuriousX affiche donc, pour chaque action, le taux de réussite réellement mesuré de son signal plutôt qu’une promesse.</div>`;
