@@ -259,6 +259,9 @@ details.desc p{color:#c3ccd8;font-size:14px;line-height:1.6}
 .tgl input{background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:10px;color:var(--text);font:inherit;font-size:15px;outline:0}
 .tgl input:focus{border-color:var(--brand)}
 .tgbtns{display:flex;gap:16px;flex-wrap:wrap}
+.tgb label.mchk{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;margin:8px 0;line-height:1.4;cursor:pointer;color:var(--text)}
+.tgb label.mchk input{margin-top:2px;accent-color:var(--brand);width:18px;height:18px;flex-shrink:0}
+.tgopts{margin:8px 0 4px;padding-top:8px;border-top:1px solid var(--line)}
 .hnote.down{color:var(--down)}
 .bell{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);cursor:pointer;display:grid;place-items:center;font-size:17px;padding:0}
 .bell i{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:var(--down);color:#fff;font-size:11px;font-style:normal;font-weight:800;display:none;place-items:center;padding:0 4px}
@@ -1145,6 +1148,7 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('#tgConnect')) { tgConnect(); return; }
   if (e.target.closest('#tgTest')) { tgCall('test').then(() => toastMsg('🧪 Message de test envoyé sur Telegram.', 'good')).catch((er) => { TG.err = er.message; renderAlerts(); }); return; }
   if (e.target.closest('#tgRun')) { tgCall('run').then((r) => { toastMsg(`🔎 Vérification faite : ${r.alerts || 0} alerte(s), ${r.sent || 0} envoyée(s) sur Telegram.`, 'good'); tgStatus(); }).catch((er) => { TG.err = er.message; renderAlerts(); }); return; }
+  if (e.target.closest('#tgDigest')) { tgCall('digest').then(() => toastMsg('📊 Résumé envoyé sur Telegram.', 'good')).catch((er) => { TG.err = er.message; renderAlerts(); }); return; }
   if (e.target.closest('#tgForget')) { TG.key = null; TG.st = null; TG.err = null; store('fx_key', null); renderAlerts(); return; }
   if (e.target.closest('#alClear')) { AL.list = []; AL.unread = 0; alSave(); renderBell(); renderAlerts(); return; }
   if (e.target.closest('#followBtn')) { if (S.data) openPF(S.data.symbol); return; }
@@ -1183,6 +1187,11 @@ $('#q').addEventListener('input', () => {
   const loc = localSugg(v);
   if (loc.length) { showSugg(loc); if (loc.some((x) => plainW(x.symbol) === plainW(v).replace(/\s/g, ''))) scheduleAuto(v, loc); }
   sugTimer = setTimeout(() => fetchSugg(v), 160);
+});
+document.addEventListener('change', (e) => {
+  if (e.target.id !== 'tgMorning' && e.target.id !== 'tgEvening') return;
+  const prefs = { morning: $('#tgMorning').checked, evening: $('#tgEvening').checked };
+  tgCall('prefs', { body: prefs }).then((r) => { if (TG.st) TG.st.prefs = r.prefs; toastMsg('✅ Réglages du résumé enregistrés.', 'good'); }).catch((er) => { TG.err = er.message; renderAlerts(); });
 });
 document.addEventListener('keydown', (e) => { if (e.target.id === 'tgKey' && e.key === 'Enter') { e.preventDefault(); tgConnect(); } });
 $('#q').addEventListener('keydown', (e) => {
@@ -1463,7 +1472,7 @@ function evalAlerts(it, q) {
     if (p <= lvl && F.trailPeak !== it.peak) {
       F.trailPeak = it.peak;
       const g = ok(it.buyPrice) ? p / it.buyPrice - 1 : NaN;
-      const tail = !ok(g) ? '' : g > 0 ? ` Vous êtes encore en plus-value de ${pct(g, 1)}${ok(it.qty) ? ` (${sgn(g)}${fmtP((p - it.buyPrice) * it.qty, cur)})` : ''} : c’est le moment d’envisager de sécuriser vos gains.` : ` Vous êtes maintenant en moins-value de ${pct(g, 1)}.`;
+      const tail = !ok(g) ? '' : g > 0 ? ` Vous êtes encore en plus-value de ${pct(g, 1)}${ok(it.qty) ? ` (${sgn(g)}${fmtP((p - it.buyPrice) * it.qty, cur)})` : ''} : c’est le moment d’envisager de sécuriser vos gains.` : ` Vous êtes maintenant en moins-value de ${pct(-g, 1, false)}.`;
       fireAlert(it, 'trail', `📉 Recul de ${pct(1 - p / it.peak, 1, false)} depuis le plus haut (${fmtP(it.peak, cur)}) : ${fmtP(p, cur)}.${tail}`, g > 0 ? 'warn' : 'bad');
     }
   }
@@ -1568,7 +1577,7 @@ function renderAlerts() {
     : perm === 'denied' ? '<div class="hnote">🔕 Notifications bloquées : autorisez-les dans les réglages du site (icône à gauche de l’adresse).</div>'
     : perm === 'na' ? '' : '<button class="go wide" id="notifOn" type="button">🔔 Activer les notifications sur cet appareil</button>';
   const rows = AL.list.length
-    ? AL.list.slice(0, 40).map((a) => `<div class="arow ${a.level}"><div class="at">${esc(a.symbol)} · ${ago(a.at / 1000)}</div><div class="am">${esc(a.msg)}</div><div class="aa"><button type="button" data-sym="${esc(a.symbol)}">Voir l’analyse</button>${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">Lire l’article</a>` : ''}</div></div>`).join('')
+    ? AL.list.slice(0, 40).map((a) => `<div class="arow ${a.level}"><div class="at">${esc(a.symbol)} · ${ago(a.at / 1000)}</div><div class="am">${esc(a.msg)}</div><div class="aa">${a.kind === 'digest' ? '' : `<button type="button" data-sym="${esc(a.symbol)}">Voir l’analyse</button>`}${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">Lire l’article</a>` : ''}</div></div>`).join('')
     : '<p class="empty">Aucune alerte pour l’instant. Ouvrez une action et touchez « ⭐ Suivre cette action » pour être prévenu.</p>';
   box.innerHTML = `<div class="hhead"><div><b>Alertes</b><span>${PF.items.length} valeur${PF.items.length > 1 ? 's' : ''} surveillée${PF.items.length > 1 ? 's' : ''}</span></div><button type="button" id="alertsClose" aria-label="Fermer">✕</button></div>${tgBlock()}${TG.st && TG.st.linked ? '' : permHtml}<div class="alist">${rows}</div>${AL.list.length ? '<button class="linkbtn" id="alClear" type="button">Effacer l’historique</button>' : ''}<div class="hnote">${TG.st && TG.st.linked ? 'Telegram : vérification toutes les 5 minutes, même FuriousX fermé. Dans l’appli ouverte : chaque minute.' : 'Sans Telegram, les alertes sont vérifiées chaque minute tant que FuriousX est ouvert.'}</div>`;
 }
@@ -1676,7 +1685,7 @@ async function tgCall(qs, opt = {}) {
   return j;
 }
 const rulesKey = (x) => JSON.stringify([x.alerts || null, x.buyPrice || null, x.buyDate || null]);
-const pfPublic = (it) => ({ symbol: it.symbol, name: it.name, exch: it.exch, currency: it.currency, tz: it.tz, qty: it.qty, buyPrice: it.buyPrice, buyDate: it.buyDate, alerts: it.alerts, peak: it.peak, fired: it.fired, lastSignal: it.lastSignal, seen: it.seen });
+const pfPublic = (it) => ({ symbol: it.symbol, name: it.name, exch: it.exch, currency: it.currency, tz: it.tz, qty: it.qty, buyPrice: it.buyPrice, buyDate: it.buyDate, alerts: it.alerts, toXof: it.toXof, peak: it.peak, fired: it.fired, lastSignal: it.lastSignal, seen: it.seen });
 function mergeServer(st) { // le serveur garde le portefeuille : vous le retrouvez sur PC et téléphone
   if (!st || !st.linked) return;
   const local = new Map(PF.items.map((x) => [x.symbol, x])), next = [], del = new Set(TG.del || []);
@@ -1759,7 +1768,13 @@ function tgBlock() {
   const run = age == null ? '⚠️ La vérification automatique n’a pas encore tourné : vérifiez le Worker « furiousx-cron ».'
     : age > 15 * 60000 ? `⚠️ Dernière vérification ${ago(st.lastRun / 1000)} : le Worker « furiousx-cron » semble arrêté.`
     : `Dernière vérification ${ago(st.lastRun / 1000)} · toutes les 5 minutes.`;
-  return `<div class="tgb on"><div class="tgt">✅ Telegram connecté<span>${esc(st.chatName || '')}</span></div><div class="hnote">${run}</div>${err}
+  const pr = st.prefs || { morning: true, evening: true };
+  const nyClose = hhmm(975 - tzOffset('America/New_York', new Date()));
+  const opts = `<div class="tgopts"><div class="tgt">📊 Résumé quotidien</div>
+    <label class="mchk"><input type="checkbox" id="tgMorning" ${pr.morning ? 'checked' : ''}>☀️ Le matin à 08h30, avant l’ouverture de la BRVM (lun.–ven.)</label>
+    <label class="mchk"><input type="checkbox" id="tgEvening" ${pr.evening ? 'checked' : ''}>🌙 Le soir vers ${nyClose}, après la clôture de New York (lun.–ven.)</label>
+    <button type="button" class="linkbtn" id="tgDigest">Recevoir un résumé maintenant</button></div>`;
+  return `<div class="tgb on"><div class="tgt">✅ Telegram connecté<span>${esc(st.chatName || '')}</span></div><div class="hnote">${run}</div>${err}${opts}
     <div class="tgbtns"><button type="button" class="linkbtn" id="tgTest">Envoyer un test</button><button type="button" class="linkbtn" id="tgRun">Vérifier maintenant</button><button type="button" class="linkbtn" id="tgForget">Oublier le code sur cet appareil</button></div></div>`;
 }
 
