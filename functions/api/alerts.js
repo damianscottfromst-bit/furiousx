@@ -13,6 +13,8 @@
 //  /api/alerts?test     → envoie un message d'essai
 //  /api/alerts?sync     → (POST) enregistre le portefeuille et les règles d'alerte
 //  /api/alerts?run      → vérifie tout et envoie les alertes (Worker toutes les 5 min)
+//  /api/alerts?digest   → envoie tout de suite un résumé du portefeuille
+//  /api/alerts?prefs    → (POST) active / désactive les résumés du matin et du soir
 //  Toutes les actions exigent l'en-tête « x-fx-key » = ALERT_KEY.
 // =====================================================================
 
@@ -177,7 +179,7 @@ function evalAlerts(it, q, out) {
       const g = ok(it.buyPrice) ? p / it.buyPrice - 1 : NaN;
       const tail = !ok(g) ? '' : g > 0
         ? ` Vous êtes encore en plus-value de ${pct(g)}${ok(it.qty) ? ` (${sgn(g)}${fmtP((p - it.buyPrice) * it.qty, cur)})` : ''} : c’est le moment d’envisager de sécuriser vos gains.`
-        : ` Vous êtes maintenant en moins-value de ${pct(g)}.`;
+        : ` Vous êtes maintenant en moins-value de ${pct(-g, 1, false)}.`;
       add('trail', `📉 Recul de ${pct(1 - p / it.peak, 1, false)} depuis le plus haut (${fmtP(it.peak, cur)}) : ${fmtP(p, cur)}.${tail}`, g > 0 ? 'warn' : 'bad');
     }
   }
@@ -212,6 +214,14 @@ function deepCheck(it, j, out) {
     }
   }
   it.seen = [...seen].slice(-150);
+  // pour le résumé quotidien : taux FCFA et prochains événements
+  if (ok(j.toXof)) it.toXof = j.toXof;
+  const now = Date.now() / 1000, ev = j.events;
+  if (ev) { // si la fiche société est momentanément indisponible, on garde les dates déjà connues
+    it.nextEarnings = ((ev.earnings || []).filter((t) => ok(t) && t > now - 3600).sort((a, b) => a - b)[0]) || null;
+    it.exDiv = ok(ev.exDividend) && ev.exDividend > now - 3600 ? ev.exDividend : null;
+  }
+  if (ok(it.nextEarnings) && it.nextEarnings < now - 3600) it.nextEarnings = null;
 }
 
 // ---------- Telegram ----------
@@ -248,7 +258,7 @@ function sanitize(items) {
       symbol: c.symbol, name: str(c.name), exch: str(c.exch, 40), currency: str(c.currency, 8), tz: str(c.tz, 40),
       qty: numOrNull(c.qty), buyPrice: numOrNull(c.buyPrice), buyDate: str(c.buyDate, 10),
       alerts: { target: numOrNull(A.target), stop: numOrNull(A.stop), trail: numOrNull(A.trail), move: numOrNull(A.move), signal: !!A.signal, news: !!A.news },
-      peak: numOrNull(c.peak), fired: c.fired && typeof c.fired === 'object' ? c.fired : {},
+      toXof: numOrNull(c.toXof), peak: numOrNull(c.peak), fired: c.fired && typeof c.fired === 'object' ? c.fired : {},
       lastSignal: SIG[c.lastSignal] ? c.lastSignal : null,
       seen: Array.isArray(c.seen) ? c.seen.filter((x) => typeof x === 'string').slice(-150).map((x) => x.slice(0, 400)) : null,
     };
@@ -272,8 +282,99 @@ function merge(server, client) {
       peak = Math.max(s.peak || 0, c.peak || 0) || null;
     }
     const seen = s.seen || c.seen ? [...new Set([...(s.seen || []), ...(c.seen || [])])].slice(-150) : null;
-    return Object.assign(c, { fired, peak, seen, lastSignal: s.lastSignal || c.lastSignal, deepAt: s.deepAt || 0 });
+    return Object.assign(c, { fired, peak, seen, lastSignal: s.lastSignal || c.lastSignal, deepAt: s.deepAt || 0, toXof: c.toXof || s.toXof || null, nextEarnings: s.nextEarnings || null, exDiv: s.exDiv || null });
   });
+}
+
+// ---------- résumé quotidien (matin avant la BRVM, soir après New York) ----------
+function tzParts(tz, date) {
+  const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short' }).formatToParts(date);
+  const g = (t) => (p.find((x) => x.type === t) || {}).value;
+  return { ymd: `${g('year')}-${g('month')}-${g('day')}`, wd: g('weekday'), min: (+g('hour') % 24) * 60 + +g('minute') };
+}
+function tzOffsetMin(tz, date) {
+  const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(date);
+  const g = (t) => +((p.find((x) => x.type === t) || {}).value || 0);
+  return Math.round((Date.UTC(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute'), g('second')) - date.getTime()) / 60000);
+}
+const hhmm = (m) => { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + 'h' + String(m % 60).padStart(2, '0'); };
+const weekday = (wd) => wd !== 'Sat' && wd !== 'Sun';
+const prefsOf = (st) => Object.assign({ morning: true, evening: true }, st.prefs || {});
+function digestDue(st, now) {
+  const pr = prefsOf(st), d = st.digest || {};
+  const utc = tzParts('UTC', now), ny = tzParts('America/New_York', now);
+  if (pr.morning && weekday(utc.wd) && utc.min >= 8 * 60 + 30 && utc.min < 12 * 60 && d.morning !== utc.ymd) return { kind: 'morning', tag: utc.ymd };
+  if (pr.evening && weekday(ny.wd) && ny.min >= 16 * 60 + 15 && d.evening !== ny.ymd) return { kind: 'evening', tag: ny.ymd };
+  return null;
+}
+const fcfa = (x, sign) => (sign && x > 0 ? '+' : '') + nf(x, 0) + ' FCFA';
+const dayFr = (t) => new Date(t * 1000).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+function buildDigest(st, kind, quotes, now) {
+  const head = kind === 'morning' ? '☀️ <b>FuriousX · Résumé du matin</b>' : kind === 'evening' ? '🌙 <b>FuriousX · Résumé du soir</b>' : '📊 <b>FuriousX · Résumé du portefeuille</b>';
+  const date = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  const time = now.toISOString().slice(11, 16).replace(':', 'h');
+  let totV = 0, totC = 0, totD = 0, anyPos = false;
+  const rows = [], moves = [], soon = [];
+  for (const it of st.items) {
+    const q = quotes.get(pfKey(it)), p = q && ok(q.price) ? q.price : null, cur = it.currency;
+    if (!ok(p)) { rows.push(`⚪ <b>${esc(it.symbol)}</b> : cours indisponible`); continue; }
+    const ch = ok(q.prevClose) && q.prevClose > 0 ? p / q.prevClose - 1 : NaN;
+    const x = ok(it.toXof) ? it.toXof : cur === 'XOF' ? 1 : null;
+    if (ok(ch)) moves.push([it.symbol, ch]);
+    let line = `${!ok(ch) ? '⚪' : ch > 0 ? '🟢' : ch < 0 ? '🔴' : '⚪'} <b>${esc(it.symbol)}</b> ${esc(fmtP(p, cur))}${ok(ch) ? ` (${pct(ch)})` : ''}`;
+    if (ok(it.qty) && ok(it.buyPrice)) {
+      line += ` · position ${pct(p / it.buyPrice - 1)}`;
+      if (x) {
+        anyPos = true; totV += p * it.qty * x; totC += it.buyPrice * it.qty * x;
+        if (ok(q.prevClose)) totD += (p - q.prevClose) * it.qty * x;
+      }
+    }
+    if (it.lastSignal) line += ` · ${SIG[it.lastSignal]}`;
+    const A = it.alerts || {};
+    if (ok(A.trail) && ok(it.peak)) {
+      const lvl = it.peak * (1 - A.trail / 100), dist = p / lvl - 1;
+      if (dist < 0) line += `\n      ⚠️ sous le stop suiveur (${esc(fmtP(lvl, cur))})`;
+      else if (dist < 0.03) line += `\n      ⚠️ à ${nf(dist * 100, 1)} % du stop suiveur (${esc(fmtP(lvl, cur))})`;
+    }
+    if (ok(A.stop) && p > A.stop && p / A.stop - 1 < 0.03) line += `\n      ⚠️ proche du stop (${esc(fmtP(A.stop, cur))})`;
+    if (ok(A.target) && p < A.target && A.target / p - 1 < 0.03) line += `\n      🎯 proche de l’objectif (${esc(fmtP(A.target, cur))})`;
+    rows.push(line);
+    const lim = now.getTime() / 1000 + 14 * 86400;
+    if (ok(it.nextEarnings) && it.nextEarnings < lim) soon.push([it.nextEarnings, `• <b>${esc(it.symbol)}</b> : résultats ${dayFr(it.nextEarnings)}`]);
+    if (ok(it.exDiv) && it.exDiv < lim) soon.push([it.exDiv, `• <b>${esc(it.symbol)}</b> : détachement du dividende ${dayFr(it.exDiv)}`]);
+  }
+  const parts = [`${head}\n${date} · ${time} (Abidjan)`];
+  if (anyPos && totC > 0) {
+    parts.push(`💼 <b>Portefeuille ≈ ${fcfa(totV)}</b>\nPlus/moins-value : <b>${fcfa(totV - totC, true)} (${pct(totV / totC - 1)})</b>\n${kind === 'morning' ? 'Dernière séance' : 'Aujourd’hui'} : ${fcfa(totD, true)}`);
+  }
+  parts.push(`<b>Vos valeurs</b>\n${rows.join('\n')}`);
+  if (kind === 'evening' && moves.length > 1) {
+    moves.sort((a, b) => b[1] - a[1]);
+    parts.push(`🏆 Meilleure : <b>${esc(moves[0][0])}</b> ${pct(moves[0][1])} · 📉 Moins bonne : <b>${esc(moves[moves.length - 1][0])}</b> ${pct(moves[moves.length - 1][1])}`);
+  }
+  if (soon.length) parts.push(`📅 <b>À venir (14 jours)</b>\n${soon.sort((a, b) => a[0] - b[0]).map((x) => x[1]).join('\n')}`);
+  const nyOff = tzOffsetMin('America/New_York', now);
+  if (kind !== 'evening') parts.push(`🕘 Aujourd’hui (heure d’Abidjan) : BRVM 09h00–15h00 · New York ${hhmm(570 - nyOff)}–${hhmm(960 - nyOff)}`);
+  const n24 = st.log.filter((a) => a.kind !== 'digest' && now.getTime() - a.at < 86400000).length;
+  parts.push(`🔔 ${n24 ? `${n24} alerte${n24 > 1 ? 's' : ''} envoyée${n24 > 1 ? 's' : ''} ces dernières 24 h` : 'Aucune alerte ces dernières 24 h'} · <a href="${esc((st.base || '') + '/')}">Ouvrir FuriousX</a>`);
+  let html = parts.join('\n\n');
+  if (html.length > 4000) html = html.slice(0, 3990) + '…';
+  return html;
+}
+async function sendDigest(ctx, st, kind, quotes) {
+  const now = new Date();
+  const r = await sendText(ctx.env, st.chatId, buildDigest(st, kind, quotes, now));
+  const label = kind === 'morning' ? 'Résumé du matin' : kind === 'evening' ? 'Résumé du soir' : 'Résumé du portefeuille';
+  st.log.unshift({ id: 'tg-' + Date.now() + '-d', at: Date.now(), symbol: 'FuriousX', name: '', kind: 'digest', msg: `📊 ${label} envoyé sur Telegram.`, level: 'good', link: null, tg: !!r.ok });
+  return !!r.ok;
+}
+async function quotesFor(ctx, st) {
+  const map = new Map();
+  try {
+    const w = await api(ctx, 'watch=' + encodeURIComponent(st.items.map(pfKey).join(',')));
+    for (const q of w.quotes || []) if (!q.error) map.set(q.key, q);
+  } catch (e) {}
+  return map;
 }
 
 // ---------- vérification complète (appelée toutes les 5 minutes) ----------
@@ -283,13 +384,11 @@ async function run(ctx, st) {
     st.lastRun = Date.now(); await saveState(ctx.env, st);
     return { checked: 0, alerts: 0, sent: 0, note: st.chatId ? 'aucune valeur suivie' : 'Telegram non relié' };
   }
-  try {
-    const w = await api(ctx, 'watch=' + encodeURIComponent(st.items.map(pfKey).join(',')));
-    for (const q of w.quotes || []) {
-      const it = st.items.find((x) => pfKey(x) === q.key);
-      if (it && !q.error) evalAlerts(it, q, out);
-    }
-  } catch (e) { /* source momentanément indisponible : on réessaiera dans 5 min */ }
+  const quotes = await quotesFor(ctx, st); // si la source ne répond pas, on réessaiera dans 5 min
+  for (const [key, q] of quotes) {
+    const it = st.items.find((x) => pfKey(x) === key);
+    if (it) evalAlerts(it, q, out);
+  }
   // signal + actualités : une valeur par passage (chaque valeur environ toutes les 15 min)
   const it = st.items.slice().sort((a, b) => (a.deepAt || 0) - (b.deepAt || 0))[0];
   if (it && Date.now() - (it.deepAt || 0) > 14 * 60000) {
@@ -302,10 +401,16 @@ async function run(ctx, st) {
     if (r.ok) sent++;
     st.log.unshift({ id: 'tg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), at: Date.now(), symbol: a.it.symbol, name: a.it.name, kind: a.kind, msg: a.text, level: a.lvl, link: a.link || null, tg: !!r.ok });
   }
+  let digest = null;
+  const due = digestDue(st, new Date());
+  if (due && quotes.size) {
+    st.digest = Object.assign(st.digest || {}, { [due.kind]: due.tag });
+    if (await sendDigest(ctx, st, due.kind, quotes)) digest = due.kind;
+  }
   st.log = st.log.slice(0, 60);
   st.lastRun = Date.now();
   await saveState(ctx.env, st);
-  return { checked: st.items.length, alerts: out.length, sent };
+  return { checked: st.items.length, alerts: out.length, sent, digest };
 }
 
 function sameKey(a, b) {
@@ -331,7 +436,7 @@ export async function onRequest(ctx) {
     if (url.searchParams.has('status')) {
       return J({
         ok: true, token: !!env.TELEGRAM_TOKEN, linked: !!st.chatId, chatName: st.chatName || null,
-        items: st.items.length, lastRun: st.lastRun || null, log: st.log.slice(0, 40),
+        items: st.items.length, lastRun: st.lastRun || null, log: st.log.slice(0, 40), prefs: prefsOf(st), digest: st.digest || {},
         // portefeuille complet (sans l'historique des actualités) : retrouvé sur tous vos appareils
         state: st.items.map((x) => ({
           symbol: x.symbol, name: x.name, exch: x.exch, currency: x.currency, tz: x.tz,
@@ -370,6 +475,21 @@ export async function onRequest(ctx) {
       st.items = merge(st.items, sanitize(body.items));
       await saveState(env, st);
       return J({ ok: true, items: st.items.length });
+    }
+    if (url.searchParams.has('digest')) {
+      if (!st.chatId) throw new HttpError(400, 'Telegram n’est pas encore relié.');
+      if (!st.items.length) throw new HttpError(400, 'Aucune valeur suivie : ajoutez d’abord une action avec « ⭐ Suivre ».');
+      const okSent = await sendDigest(ctx, st, 'now', await quotesFor(ctx, st));
+      await saveState(env, st);
+      if (!okSent) throw new HttpError(502, 'Telegram a refusé l’envoi du résumé.');
+      return J({ ok: true });
+    }
+    if (url.searchParams.has('prefs')) {
+      if (request.method !== 'POST') throw new HttpError(405, 'Utilisez POST.');
+      const b = await request.json().catch(() => ({}));
+      st.prefs = { morning: b.morning !== false, evening: b.evening !== false };
+      await saveState(env, st);
+      return J({ ok: true, prefs: st.prefs });
     }
     if (url.searchParams.has('run')) return J(await run(ctx, st));
     throw new HttpError(400, 'Action inconnue.');
