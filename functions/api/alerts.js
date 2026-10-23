@@ -140,8 +140,16 @@ const NEWS_CAT = [
   ['Justice & régulation', /(enquête|enquete|investigation|probe|procès|\bproces\b|lawsuit|\bsued\b|poursuite|sanction|amende|\bfine[sd]?\b|régulat|regulat|\bsec\b|antitrust|fraude|fraud|plainte|suspension|suspend|recall|rappel de produit|\bban(s|ned)?\b)/i],
   ['Analystes', /(upgrade|downgrade|relève son|releve son|abaisse|objectif de cours|price target|\brating|recommandation|outperform|underperform)/i],
 ];
-const NEWS_POS = /(hausse|record|\bbond|progress|croissance|\bbeats?\b|dépasse|depasse|surpass|upgrade|relève|releve|augment|\braises?\b|\bsoar|\bjump|surge|rally|\bgains?\b|rachat d.actions|buyback|remporte|\bwins?\b|approuv|approval|optimis)/i;
-const NEWS_NEG = /(baisse|chute|plonge|recul|\bperte|\bloss|\bmiss(es)?\b|downgrade|abaisse|\bcuts?\b|réduit|reduit|démission|demission|resign|steps? down|enquête|enquete|investigation|probe|lawsuit|procès|amende|\bfine[sd]?\b|fraud|suspend|recall|warning|avertissement|plunge|\bfalls?\b|\bdrops?\b|slump|tumble|\bdelay|retard|annul|cancel|déficit|deficit|concern|inquiét|inquiet|worr)/i;
+const NEWS_POS = /(hausse|record|\bbond|progress|croissance|\bbeats?\b|dépasse|depasse|surpass|upgrade|relève|releve|augment|\braises?\b|\bsoar|\bjump|surge|rally|\bgains?\b|rachat d.actions|buyback|remporte|\bwins?\b|approuv|approval|optimis|edges? up|\brises?\b|climb|higher)/i;
+const NEWS_NEG = /(baisse|chute|plonge|recul|\bperte|\bloss|\bmiss(es)?\b|downgrade|abaisse|\bcuts?\b|réduit|reduit|démission|demission|resign|steps? down|enquête|enquete|investigation|probe|lawsuit|procès|amende|\bfine[sd]?\b|fraud|suspend|recall|warning|avertissement|plunge|\bfalls?\b|\bdrops?\b|slump|tumble|\bdelay|retard|annul|cancel|déficit|deficit|concern|inquiét|inquiet|worr|edges? down|\blower\b|\bslides?\b|\bsinks?\b)/i;
+// l'actualité parle-t-elle vraiment de cette société ? (évite les articles « voisins »)
+function aboutCompany(it, title) {
+  const plain = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const t = plain(title), sym = plain(it.symbol).split('.')[0];
+  if (sym.length >= 2 && new RegExp('\\b' + sym.replace(/[^a-z0-9]/g, '') + '\\b').test(t)) return true;
+  const first = plain(it.name).split(/[^a-z0-9]+/).find((w) => w.length >= 3 && !['the', 'bank', 'banque', 'societe', 'groupe', 'group', 'compagnie'].includes(w));
+  return !!first && t.includes(first);
+}
 function classifyNews(t) {
   const cats = NEWS_CAT.filter(([, re]) => re.test(t)).map(([c]) => c);
   if (!cats.length) return null;
@@ -198,7 +206,7 @@ function deepCheck(it, j, out) {
     seen.add(id);
     if (first || !A.news || sent >= 3) continue;
     const c = classifyNews(n.title || '');
-    if (c && (!n.time || Date.now() / 1000 - n.time < 72 * 3600)) {
+    if (c && aboutCompany(it, n.title) && (!n.time || Date.now() / 1000 - n.time < 72 * 3600)) {
       sent++;
       out.push({ it, kind: 'news', lvl: c.lvl, link: n.link, text: `📰 ${c.cat} : ${n.title}\nImpact probable sur le cours : ${c.dir} (estimation automatique, à vérifier).` });
     }
