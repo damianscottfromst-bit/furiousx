@@ -50,7 +50,7 @@ button{font:inherit;color:inherit}
 .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p.lead{margin:0 0 22px;color:var(--muted);font-size:15px;max-width:620px;line-height:1.5}
 .compact .hero{padding:16px 0 4px}
-.compact .hero h1,.compact .hero p.lead,.compact .help,.compact .chips-label,.compact #quick{display:none}
+.compact .hero h1,.compact .hero p.lead,.compact .help,.compact .chips-label,.compact #quick,.compact #quickB{display:none}
 .compact #recent{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-top:10px}
 .compact #recent::-webkit-scrollbar{display:none}
 .compact #recent .chip{flex-shrink:0}
@@ -221,6 +221,35 @@ details.desc p{color:#c3ccd8;font-size:14px;line-height:1.6}
 /* chargement / erreur */
 .skel{border-radius:10px;background:linear-gradient(90deg,var(--panel2),#1a2230,var(--panel2));background-size:200% 100%;animation:sh 1.1s linear infinite}
 @keyframes sh{to{background-position:-200% 0}}
+#board{margin-top:22px}
+.compact #board{display:none}
+.bd-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.bd-head h2{font-family:Unbounded,Inter,sans-serif;font-size:19px;margin:0;letter-spacing:-.02em}
+.bd-head .muted{font-size:13px}
+.bd-st{font-size:13px;color:var(--muted);margin:8px 0 14px;line-height:1.5}
+.bd-st .dot{margin-right:7px;vertical-align:1px}
+.bd-st b{color:var(--brand2)}
+.idx{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.idx-b{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;color:inherit;font:inherit}
+.idx-b:hover{border-color:var(--brand)}
+.idx-b .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.idx-b .v{font-size:18px;font-weight:700}
+.idx-b .c{font-size:12.5px;font-weight:700}
+.bd-sum{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;font-weight:600;margin-bottom:12px}
+.bd-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.bd-f{flex:1;min-width:170px;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;color:var(--text);font:inherit;font-size:14px;outline:0}
+.bd-f:focus{border-color:var(--brand)}
+.bd-list{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.bd-row{display:grid;grid-template-columns:1fr auto 78px;gap:12px;align-items:center;width:100%;padding:10px 14px;background:transparent;border:0;border-bottom:1px solid var(--line);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.bd-row:last-child{border-bottom:0}
+.bd-row:hover{background:var(--panel2)}
+.bd-row .nm{display:flex;flex-direction:column;min-width:0}
+.bd-row .s{font-weight:700;font-size:14px}
+.bd-row .n{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-row .p{font-weight:600;font-size:14px}
+.bd-row .v{justify-self:end;font-weight:700;font-size:12.5px;padding:3px 7px;border-radius:7px;color:var(--muted);background:var(--panel2)}
+.bd-row .v.up{color:var(--up);background:rgba(22,199,132,.12)}
+.bd-row .v.down{color:var(--down);background:rgba(240,67,79,.12)}
 .err{text-align:center;padding:30px 18px}
 .err .ic{font-size:34px}
 .err h2{margin:10px 0 6px;font-size:20px}
@@ -245,7 +274,7 @@ footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--dim);fon
 <main class="wrap">
   <section class="hero">
     <h1>Toute action mondiale,<br><em>analysée en un éclair.</em></h1>
-    <p class="lead">Cours, signal Acheter · Accumuler · Garder · Vendre, probabilités et actualités — avec la fiabilité réelle du signal mesurée sur l’historique de chaque action.</p>
+    <p class="lead">Bourses internationales et BRVM : cours, signal Acheter · Accumuler · Garder · Vendre, probabilités et actualités — avec la fiabilité réelle du signal mesurée sur l’historique de chaque action.</p>
     <form class="search" id="sform" autocomplete="off">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" inputmode="search" enterkeyhint="search" placeholder="Symbole ou nom : SPCX, Apple, LVMH, Tencent…" aria-label="Rechercher une action" spellcheck="false" autocapitalize="characters">
@@ -255,16 +284,19 @@ footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--dim);fon
     <div id="fileNotice"></div>
     <div class="chips-label" id="recentLabel" hidden>Récemment consultées</div>
     <div class="chips" id="recent"></div>
-    <div class="chips-label">Accès rapide</div>
+    <div class="chips-label">Accès rapide BRVM</div>
+    <div class="chips" id="quickB"></div>
+    <div class="chips-label">Accès rapide international</div>
     <div class="chips" id="quick"></div>
-    <div class="help">Écrire le symbole : États-Unis <code>AAPL</code> · Paris <code>MC.PA</code> · Francfort <code>SAP.DE</code> · Amsterdam <code>ASML.AS</code> · Londres <code>SHEL.L</code> · Hong Kong <code>0700.HK</code> · Tokyo <code>7203.T</code> — ou tapez simplement le nom de l’entreprise.</div>
+    <div class="help">Écrire le symbole : États-Unis <code>AAPL</code> · Paris <code>MC.PA</code> · Francfort <code>SAP.DE</code> · Amsterdam <code>ASML.AS</code> · Londres <code>SHEL.L</code> · Hong Kong <code>0700.HK</code> · Tokyo <code>7203.T</code> · BRVM <code>SNTS</code> ou « Sonatel » — ou tapez simplement le nom de l’entreprise.</div>
   </section>
+  <section id="board"></section>
   <section id="out" aria-live="polite"></section>
 </main>
 
 <footer>
   <div class="wrap">
-    <b>FuriousX</b> — outil d’aide à la décision. Les données proviennent de Yahoo Finance (cours souvent différés d’environ 15 minutes). Les signaux sont calculés par un modèle statistique : ils ne garantissent aucun résultat et ne constituent pas un conseil en investissement. Investir en bourse comporte un risque de perte en capital.
+    <b>FuriousX</b> — outil d’aide à la décision. Les données proviennent de Yahoo Finance (cours souvent différés d’environ 15 minutes) et, pour la BRVM, de brvm.org (cours officiels) et sikafinance.com (historique). Les signaux sont calculés par un modèle statistique : ils ne garantissent aucun résultat et ne constituent pas un conseil en investissement. Investir en bourse comporte un risque de perte en capital.
   </div>
 </footer>
 
@@ -285,7 +317,7 @@ function nf(x, d = 2) {
   if (!ok(x)) return '—';
   return x.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
-function px(x) { if (!ok(x)) return '—'; const a = Math.abs(x); return nf(x, a >= 1 ? 2 : a >= 0.01 ? 4 : 6); }
+function px(x) { if (!ok(x)) return '—'; const a = Math.abs(x); if (S.data && S.data.currency === 'XOF' && a >= 10) return nf(x, 0); return nf(x, a >= 1 ? 2 : a >= 0.01 ? 4 : 6); }
 function pct(x, d = 2, sign = true) { if (!ok(x)) return '—'; return (sign && x > 0 ? '+' : '') + nf(x * 100, d) + ' %'; }
 function big(x) {
   if (!ok(x)) return '—';
@@ -296,7 +328,7 @@ function big(x) {
   return nf(x, 0);
 }
 function cls(x) { return !ok(x) || x === 0 ? '' : x > 0 ? 'up' : 'down'; }
-function curLabel(c) { return c === 'GBp' ? 'GBX (pence)' : c === 'ZAc' ? 'ZAc (cents)' : c || ''; }
+function curLabel(c) { return c === 'XOF' ? 'FCFA' : c === 'GBp' ? 'GBX (pence)' : c === 'ZAc' ? 'ZAc (cents)' : c || ''; }
 function fmtTime(ts, tz, opts) {
   try { return new Date(ts * 1000).toLocaleString('fr-FR', Object.assign({ timeZone: tz || 'UTC' }, opts)); }
   catch (e) { return new Date(ts * 1000).toLocaleString('fr-FR', opts); }
@@ -316,6 +348,7 @@ function hexA(hex, a) {
 
 /* ---------------- horaires des bourses (heure locale → heure d'Abidjan) ---------------- */
 const EXCH = {
+  'Africa/Abidjan': { n: 'BRVM', de: 'de la BRVM', o: 540, c: 900 },
   'America/New_York': { n: 'New York', o: 570, c: 960 },
   'America/Toronto': { n: 'Toronto', o: 570, c: 960 },
   'Europe/Paris': { n: 'Paris', o: 540, c: 1050 },
@@ -330,8 +363,8 @@ const EXCH = {
   'Asia/Tokyo': { n: 'Tokyo', o: 540, c: 930, lunch: [690, 750] },
   'Asia/Shanghai': { n: 'Shanghai', o: 570, c: 900, lunch: [690, 780] },
 };
-const STRIP = ['America/New_York', 'Europe/Paris', 'Europe/London', 'Europe/Berlin', 'Asia/Hong_Kong', 'Asia/Tokyo'];
-const PANEL = ['America/New_York', 'Europe/Paris', 'Europe/London', 'Europe/Berlin', 'Europe/Amsterdam', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Shanghai'];
+const STRIP = ['Africa/Abidjan', 'America/New_York', 'Europe/Paris', 'Europe/London', 'Europe/Berlin', 'Asia/Hong_Kong', 'Asia/Tokyo'];
+const PANEL = ['Africa/Abidjan', 'America/New_York', 'Europe/Paris', 'Europe/London', 'Europe/Berlin', 'Europe/Amsterdam', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Shanghai'];
 function tzOffset(tz, date) {
   const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(date);
   const g = (t) => +((p.find((x) => x.type === t) || {}).value || 0);
@@ -354,7 +387,7 @@ function session(tz) {
     const wk = wd >= 1 && wd <= 5;
     const times = (o) => ({ open: hhmm(ex.o - o), close: hhmm(ex.c - o), lunch: ex.lunch ? [hhmm(ex.lunch[0] - o), hhmm(ex.lunch[1] - o)] : null });
     if (wk && mins >= ex.o && mins < ex.c) {
-      const r = Object.assign({ n: ex.n }, times(off));
+      const r = Object.assign({ n: ex.n, de: ex.de || 'de ' + ex.n }, times(off));
       if (ex.lunch && mins >= ex.lunch[0] && mins < ex.lunch[1]) { r.state = 'lunch'; r.until = ex.lunch[1] - mins; }
       else { r.state = 'open'; r.until = ex.c - mins; }
       return r;
@@ -367,7 +400,7 @@ function session(tz) {
     const at = now.getTime() + until * 60000;
     const dd = (Date.parse(abjDay(at)) - Date.parse(abjDay(now.getTime()))) / 86400000;
     const when = dd === 0 ? 'aujourd’hui' : dd === 1 ? 'demain' : new Date(at).toLocaleDateString('fr-FR', { weekday: 'long', timeZone: 'UTC' });
-    return Object.assign({ n: ex.n, state: 'closed', until, when }, times(offN));
+    return Object.assign({ n: ex.n, de: ex.de || 'de ' + ex.n, state: 'closed', until, when }, times(offN));
   } catch (e) { return null; }
 }
 function renderMarkets() {
@@ -549,8 +582,10 @@ const QUICK = [
   ['SPCX', 'SpaceX'], ['NVDA', 'Nvidia'], ['AAPL', 'Apple'], ['TSLA', 'Tesla'], ['MSFT', 'Microsoft'],
   ['MC.PA', 'LVMH'], ['ASML.AS', 'ASML'], ['SAP.DE', 'SAP'], ['0700.HK', 'Tencent'], ['9988.HK', 'Alibaba'], ['7203.T', 'Toyota'],
 ];
+const QUICK_BRVM = [['SNTS', 'Sonatel'], ['SPHC', 'SAPH'], ['ORAC', 'Orange CI'], ['SGBC', 'SG CI'], ['ETIT', 'Ecobank'], ['BRVMC', 'Indice BRVM']];
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 function renderChips() {
+  $('#quickB').innerHTML = QUICK_BRVM.map(([s, n]) => `<button class="chip" data-sym="${s}"><b>${s}</b><span>${n}</span></button>`).join('');
   $('#quick').innerHTML = QUICK.map(([s, n]) => `<button class="chip" data-sym="${s}"><b>${s}</b><span>${n}</span></button>`).join('');
   const rec = store('fx_recent') || [];
   $('#recentLabel').hidden = !rec.length;
@@ -775,7 +810,9 @@ function tilesCard() {
   if (iy >= 0) per.push(['Depuis janv.', p / c[iy] - 1]);
   add('1 an', 252); add('3 ans', 756);
   const sinceStart = d.firstTrade && H.t[0] - d.firstTrade < 86400 * 7;
-  if (sinceStart) per.push(['Depuis cotation', p / c[0] - 1]); else add('5 ans', n - 1);
+  const yrs = (H.t[n - 1] - H.t[0]) / (365.25 * 86400);
+  if (sinceStart) per.push(['Depuis cotation', p / c[0] - 1]);
+  else if (n > 300) per.push([yrs >= 4.5 ? '5 ans' : Math.round(yrs) + ' ans', p / c[0] - 1]);
   const perf = per.map(([k, v]) => `<div><div class="k">${k}</div><div class="v num ${cls(v)}">${pct(v, 1)}</div></div>`).join('');
 
   return `<div class="card" id="tilesCard"><h3>Indicateurs techniques</h3><div class="tiles">${tiles}</div>
@@ -822,6 +859,7 @@ function analystCard() {
     ].filter((r) => r[1] != null);
     if (rows.length) h += `<h3 style="margin-top:${h ? 22 : 0}px">Fondamentaux</h3><div class="rows">${rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span><span class="v num">${v}</span></div>`).join('')}</div>`;
   }
+  if (!h && d.exchange === 'BRVM') h = `<h3>Analystes & fondamentaux</h3><p class="empty">Pas de consensus d’analystes publié en ligne pour les valeurs de la BRVM. Pour les états financiers et les recommandations, consultez les publications de la société et de votre SGI.</p>`;
   if (!h) h = `<h3>Analystes & fondamentaux</h3><p class="empty">Données d’analystes et fondamentaux momentanément indisponibles pour ${esc(d.symbol)}. Le cours, le signal et les actualités restent à jour.</p>`;
   return `<div class="card">${h}</div>`;
 }
@@ -832,7 +870,7 @@ function newsCard() {
     ? list.map((x) => `<a class="nw" href="${esc(x.link)}" target="_blank" rel="noopener noreferrer">${x.thumb ? `<img src="${esc(x.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<div><div class="t">${esc(x.title)}</div><div class="m">${esc(x.publisher || '')}${x.time ? ' · ' + ago(x.time) : ''}</div></div></a>`).join('')
     : `<p class="empty">Aucune actualité récente trouvée pour ${esc(d.symbol)}.</p>`;
   const alt = (d.alternatives || []).length ? `<div class="chips" style="margin-top:14px"><span class="muted" style="font-size:12px;align-self:center">Vous cherchiez peut-être :</span>${d.alternatives.map((a) => `<button class="chip" data-sym="${esc(a.symbol)}"><b>${esc(a.symbol)}</b><span>${esc(a.name.slice(0, 20))}</span></button>`).join('')}</div>` : '';
-  return `<div class="card"><h3>Actualités & projets <span class="rt">en anglais, sources internationales</span></h3><div class="news">${items}</div>${alt}</div>`;
+  return `<div class="card"><h3>Actualités & projets <span class="rt">${d.exchange === 'BRVM' ? 'presse francophone' : 'en anglais, sources internationales'}</span></h3><div class="news">${items}</div>${alt}</div>`;
 }
 
 function profileCard() {
@@ -967,6 +1005,8 @@ function endHover() { S.hover = null; const t = $('#tip'); if (t) t.style.displa
 
 /* ---------------- événements ---------------- */
 document.addEventListener('click', (e) => {
+  const bsort = e.target.closest('[data-bs]');
+  if (bsort) { B.sort = bsort.dataset.bs; document.querySelectorAll('#bdSort button').forEach((b) => b.classList.toggle('on', b === bsort)); renderBoardList(); return; }
   if (e.target.closest('#hoursClose')) { toggleHours(false); return; }
   if (e.target.closest('#markets')) { toggleHours(); return; }
   if (!e.target.closest('#hbox')) toggleHours(false);
@@ -977,7 +1017,7 @@ document.addEventListener('click', (e) => {
   const hz = e.target.closest('#hz button');
   if (hz) { S.horizon = +hz.dataset.h; renderSignal(); return; }
   if (e.target.closest('#refresh')) { if (S.data) load(S.data.symbol, { silent: true }); return; }
-  if (e.target.closest('#home')) { document.body.classList.remove('compact'); $('#out').innerHTML = ''; S.data = null; history.replaceState(null, '', location.pathname); document.title = 'FuriousX — Analyse boursière instantanée'; $('#q').value = ''; $('#q').focus(); return; }
+  if (e.target.closest('#home')) { document.body.classList.remove('compact'); $('#out').innerHTML = ''; S.data = null; history.replaceState(null, '', location.pathname); document.title = 'FuriousX — Analyse boursière instantanée'; $('#q').value = ''; loadBoard(); return; }
   const sb = e.target.closest('#sugg button');
   if (sb) { const it = sugItems[+sb.dataset.i]; $('#q').value = it.symbol; load(it.symbol); return; }
   if (!e.target.closest('#sform')) hideSugg();
@@ -1026,7 +1066,7 @@ function updateQuote(old) {
   if (ok(old) && d.price !== old) { el.classList.remove('flash-up', 'flash-down'); void el.offsetWidth; el.classList.add(d.price > old ? 'flash-up' : 'flash-down'); }
   const c = $('#qChg'); c.className = 'chg num ' + cls(chg);
   c.textContent = ok(chg) ? (chg > 0 ? '+' : '') + px(chg) + ' (' + pct(chgP) + ')' : '';
-  $('#qXof').textContent = ok(xof) ? '≈ ' + nf(xof, 0) + ' FCFA' : '';
+  $('#qXof').textContent = ok(xof) && d.currency !== 'XOF' ? '≈ ' + nf(xof, 0) + ' FCFA' : '';
   $('#qStats').innerHTML = quoteStats(d);
   updateStatus();
   document.title = `${d.symbol} ${px(d.price)} — FuriousX`;
@@ -1035,20 +1075,20 @@ function updateStatus() {
   const el = $('#qStatus'), d = S.data; if (!el || !d) return;
   const tz = d.timezone || 'UTC', se = session(tz);
   const city = se ? se.n : tz.split('/').pop().replace(/_/g, ' ');
-  const delay = /^America\//.test(tz) ? 'cours en général quasi temps réel' : 'cours différé d’environ 15 min';
+  const delay = tz === 'Africa/Abidjan' ? 'cours officiels de la BRVM' : /^America\//.test(tz) ? 'cours en général quasi temps réel' : 'cours différé d’environ 15 min';
   const t = d.marketTime;
   const last = t ? `${fmtTime(t, tz, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} (${esc(city)}) · ${fmtTime(t, 'Africa/Abidjan', { hour: '2-digit', minute: '2-digit' })} à Abidjan` : '';
   let h;
   if (d.marketOpen) {
     const age = Math.max(0, Math.round((Date.now() - (S.liveAt || Date.now())) / 1000));
     h = `<span class="live"><i></i>EN DIRECT</span>mis à jour il y a ${age} s · ${delay}`;
-    if (se && se.state === 'open') h += `<div class="cd">⏱ Clôture de ${esc(se.n)} dans <b>${fmtDur(se.until)}</b>, à ${se.close} (heure d’Abidjan)</div>`;
+    if (se && se.state === 'open') h += `<div class="cd">⏱ Clôture ${esc(se.de)} dans <b>${fmtDur(se.until)}</b>, à ${se.close} (heure d’Abidjan)</div>`;
     else if (se && se.state === 'lunch') h += `<div class="cd">🍽 Pause déjeuner à ${esc(se.n)}, reprise dans <b>${fmtDur(se.until)}</b></div>`;
   } else {
     h = `<span class="dot"></span>Marché fermé · dernier cours : ${last}`;
-    if (se && se.state === 'closed') h += `<div class="cd">⏰ Ouverture de ${esc(se.n)} dans <b>${fmtDur(se.until)}</b>, ${se.when} à ${se.open} (heure d’Abidjan)</div>`;
+    if (se && se.state === 'closed') h += `<div class="cd">⏰ Ouverture ${esc(se.de)} dans <b>${fmtDur(se.until)}</b>, ${se.when} à ${se.open} (heure d’Abidjan)</div>`;
     else if (se && se.state === 'lunch') h += `<div class="cd">🍽 Pause déjeuner à ${esc(se.n)}, reprise dans <b>${fmtDur(se.until)}</b></div>`;
-    else if (se) h += `<div class="cd">⏳ La séance de ${esc(se.n)} devrait être ouverte : connexion au direct… (jour férié possible)</div>`;
+    else if (se) h += `<div class="cd">⏳ La séance ${esc(se.de)} devrait être ouverte : connexion au direct… (jour férié possible)</div>`;
   }
   el.innerHTML = h;
 }
@@ -1062,6 +1102,8 @@ function applyLive(j) {
   if (ok(j.dayHigh)) d.dayHigh = j.dayHigh;
   if (ok(j.dayLow)) d.dayLow = j.dayLow;
   if (ok(j.volume)) d.volume = j.volume;
+  if (ok(d.dayHigh) && d.price > d.dayHigh) d.dayHigh = d.price;
+  if (ok(d.dayLow) && d.price < d.dayLow) d.dayLow = d.price;
   if (j.intraday) d.intraday = j.intraday;
   if (d.intraday && d.intraday.c.length) { // le dernier point du graphique 1J colle au prix en direct
     const it = d.intraday, k = it.c.length - 1;
@@ -1087,7 +1129,7 @@ async function tickLive() {
   if (!d.marketOpen && !(se && se.state !== 'closed')) return; // bourse fermée : inutile d'interroger
   liveBusy = true;
   try {
-    const r = await fetch('/api/stock?live=' + encodeURIComponent(d.symbol));
+    const r = await fetch('/api/stock?live=' + encodeURIComponent(d.symbol) + (d.exchange === 'BRVM' ? '&x=BRVM' : ''));
     if (!r.ok) return;
     const j = await r.json();
     if (!j || j.error || !S.data || j.symbol !== S.data.symbol || !ok(j.price)) return;
@@ -1101,9 +1143,67 @@ setInterval(() => {
   renderHours();
   if (tick % 15 === 0) renderMarkets();
   if (tick % 10 === 0) tickLive(); // cours actualisé toutes les 10 s quand la bourse est ouverte
+  if (!document.body.classList.contains('compact')) {
+    const st = $('#bdSt'); if (st) st.innerHTML = boardStatus();
+    const sb = session('Africa/Abidjan');
+    if (tick % 60 === 0 && sb && sb.state === 'open' && document.visibilityState === 'visible') loadBoard(true);
+  }
   if (tick % 900 === 0 && S.data && S.data.marketOpen && document.visibilityState === 'visible') load(S.data.symbol, { silent: true }); // actualités etc. toutes les 15 min
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { renderMarkets(); tickLive(); } });
+
+/* ---------------- tableau du marché BRVM ---------------- */
+const B = { data: null, sort: 'var', loading: false, at: 0 };
+const COUNTRY_FR = { ci: 'Côte d’Ivoire', sn: 'Sénégal', bj: 'Bénin', bf: 'Burkina Faso', ml: 'Mali', ne: 'Niger', tg: 'Togo' };
+const plain = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+async function loadBoard(force) {
+  const el = $('#board'); if (!el || document.body.classList.contains('compact') || B.loading) return;
+  if (!force && B.data && Date.now() - B.at < 60000) return renderBoard();
+  B.loading = true;
+  if (!B.data) el.innerHTML = '<div class="card"><div class="skel" style="height:22px;width:45%"></div><div class="skel" style="height:64px;margin-top:14px"></div><div class="skel" style="height:220px;margin-top:14px"></div></div>';
+  try {
+    const r = await fetch('/api/stock?brvm=board');
+    const j = JSON.parse(await r.text());
+    if (!r.ok || j.error) throw new Error(j.error || 'Erreur ' + r.status);
+    B.data = j; B.at = Date.now();
+    if (!document.body.classList.contains('compact')) renderBoard();
+  } catch (e) {
+    if (!B.data) el.innerHTML = `<div class="card"><h3>Marché BRVM</h3><p class="empty">Données de la BRVM momentanément indisponibles. ${location.protocol === 'file:' ? 'Ouvrez FuriousX depuis son adresse en ligne.' : 'Réessayez dans un instant.'}</p></div>`;
+  } finally { B.loading = false; }
+}
+function boardStatus() {
+  const se = session('Africa/Abidjan'); if (!se) return '';
+  return se.state === 'open'
+    ? `<span class="dot on"></span>Séance en cours · clôture dans <b class="num">${fmtDur(se.until)}</b>, à ${se.close}`
+    : `<span class="dot"></span>Marché fermé · ouverture ${se.when} à ${se.open} (dans <b class="num">${fmtDur(se.until)}</b>)`;
+}
+function renderBoard() {
+  const el = $('#board'), j = B.data; if (!el || !j) return;
+  const it = j.items, up = it.filter((x) => x.var > 0).length, dn = it.filter((x) => x.var < 0).length;
+  const idx = (j.indices || []).map((x) => `<button class="idx-b" data-sym="${esc(x.symbol)}"><span class="k">${esc(x.name)}</span><span class="v num">${nf(x.value, 2)}</span><span class="c num ${cls(x.var)}">${pct(x.var / 100)}</span></button>`).join('');
+  const sorts = [['var', 'Hausses'], ['-var', 'Baisses'], ['vol', 'Plus échangées'], ['az', 'A → Z']];
+  el.innerHTML = `<div class="card">
+    <div class="bd-head"><h2>Marché BRVM</h2><span class="muted">Bourse régionale · ${it.length} actions</span></div>
+    <div class="bd-st" id="bdSt">${boardStatus()}</div>
+    ${idx ? `<div class="idx">${idx}</div>` : ''}
+    <div class="bd-sum"><span class="up">▲ ${up} en hausse</span><span class="down">▼ ${dn} en baisse</span><span class="muted">${it.length - up - dn} stable${it.length - up - dn > 1 ? 's' : ''}</span></div>
+    <div class="bd-tools"><div class="seg" id="bdSort">${sorts.map(([k, l]) => `<button type="button" data-bs="${k}" class="${B.sort === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <input id="bdFilter" class="bd-f" type="search" placeholder="Filtrer : Sonatel, Bank, Sénégal…" autocomplete="off" aria-label="Filtrer les actions BRVM"></div>
+    <div class="bd-list" id="bdList"></div>
+    <div class="disc">Cours officiels publiés par la BRVM, en FCFA. Touchez une valeur pour son analyse complète.</div>
+  </div>`;
+  renderBoardList();
+}
+function renderBoardList() {
+  const box = $('#bdList'); if (!box || !B.data) return;
+  const f = plain(($('#bdFilter') || {}).value).trim(), s = B.sort;
+  const it = B.data.items.filter((x) => !f || plain(`${x.symbol} ${x.name} ${x.sector || ''} ${COUNTRY_FR[x.country] || ''}`).includes(f));
+  it.sort((a, b) => s === 'var' ? b.var - a.var : s === '-var' ? a.var - b.var : s === 'vol' ? (b.volume * b.price) - (a.volume * a.price) : a.name.localeCompare(b.name, 'fr'));
+  box.innerHTML = it.length
+    ? it.map((x) => `<button type="button" class="bd-row" data-sym="${esc(x.symbol)}"><span class="nm"><span class="s num">${esc(x.symbol)}</span><span class="n">${esc(x.name)}${x.country ? ' · ' + esc(COUNTRY_FR[x.country]) : ''}</span></span><span class="p num">${nf(x.price, 0)}</span><span class="v num ${cls(x.var)}">${pct(x.var / 100)}</span></button>`).join('')
+    : '<p class="empty" style="padding:14px;margin:0">Aucune valeur ne correspond.</p>';
+}
+document.addEventListener('input', (e) => { if (e.target.id === 'bdFilter') renderBoardList(); });
 
 /* ---------------- démarrage ---------------- */
 renderMarkets();
@@ -1112,7 +1212,7 @@ if (location.protocol === 'file:') {
   $('#fileNotice').innerHTML = '<div class="notice">Vous consultez le fichier en local. Pour obtenir les cours en direct, ouvrez FuriousX depuis son adresse en ligne (Cloudflare Pages).</div>';
 }
 const startSym = decodeURIComponent(location.hash.slice(1));
-if (startSym) { $('#q').value = startSym; load(startSym); }
+if (startSym) { $('#q').value = startSym; load(startSym); } else loadBoard();
 </script>
 </body>
 </html>
