@@ -111,6 +111,30 @@ button{font:inherit;color:inherit}
 .stat .v{margin-top:4px;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .speed{margin-top:14px;font-size:12px;color:var(--dim);display:flex;gap:6px;align-items:center}
 .speed b{color:var(--brand2)}
+.live{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:10.5px;letter-spacing:.1em;color:#fff;background:var(--down);padding:3px 8px;border-radius:6px;margin-right:8px;vertical-align:1px}
+.live i{width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1.1s infinite}
+@keyframes blink{50%{opacity:.2}}
+.cd{margin-top:8px;color:var(--text);font-size:13.5px;line-height:1.5}
+.cd b{color:var(--brand2);font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+.px{border-radius:8px}
+@keyframes flU{0%{color:var(--up);background:rgba(22,199,132,.2)}100%{background:transparent}}
+@keyframes flD{0%{color:var(--down);background:rgba(240,67,79,.2)}100%{background:transparent}}
+.flash-up{animation:flU 1.4s ease-out}
+.flash-down{animation:flD 1.4s ease-out}
+.mk.btn{cursor:pointer;color:var(--text);background:var(--panel2);border-color:var(--line2);font-weight:600}
+.markets{cursor:pointer}
+.hours{position:fixed;top:58px;left:0;right:0;z-index:35;display:none;pointer-events:none}
+.hours.show{display:block}
+.hbox{pointer-events:auto;margin:8px 0 0 auto;max-width:430px;background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:4px 16px 12px;box-shadow:0 20px 50px rgba(0,0,0,.65);max-height:calc(100vh - 80px);overflow:auto}
+.hhead{display:flex;align-items:flex-start;gap:8px;padding:12px 0 6px}
+.hhead span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.hhead button{margin-left:auto;background:transparent;border:0;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px}
+.hrow{display:grid;grid-template-columns:12px 1fr auto;column-gap:10px;row-gap:2px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.hrow .hh{font-size:13px;font-weight:600}
+.hrow .hs{grid-column:2/4;font-size:12px;color:var(--muted)}
+.hrow .hs.up{color:var(--up)}
+.hrow .hl{grid-column:2/4;font-size:11.5px;color:var(--dim)}
+.hnote{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5}
 
 /* signal */
 .sig-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -216,6 +240,7 @@ footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--dim);fon
     <div class="markets" id="markets"></div>
   </div>
 </header>
+<div class="hours" id="hours"><div class="wrap"><div class="hbox" id="hbox"></div></div></div>
 
 <main class="wrap">
   <section class="hero">
@@ -253,7 +278,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const ok = (x) => typeof x === 'number' && isFinite(x);
 const clamp = (x, a = -1, b = 1) => Math.max(a, Math.min(b, x));
 
-const S = { data: null, ind: null, scores: null, now: null, range: '6M', horizon: 21, hover: null, charts: [], busy: false };
+const S = { data: null, ind: null, scores: null, now: null, range: '6M', horizon: 21, hover: null, charts: [], busy: false, liveAt: 0 };
 
 /* ---------------- mise en forme ---------------- */
 function nf(x, d = 2) {
@@ -289,37 +314,91 @@ function hexA(hex, a) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-/* ---------------- horloges des marchés ---------------- */
-const MARKETS = [
-  { n: 'New York', tz: 'America/New_York', o: 570, c: 960 },
-  { n: 'Paris', tz: 'Europe/Paris', o: 540, c: 1050 },
-  { n: 'Londres', tz: 'Europe/London', o: 480, c: 990 },
-  { n: 'Francfort', tz: 'Europe/Berlin', o: 540, c: 1050 },
-  { n: 'Hong Kong', tz: 'Asia/Hong_Kong', o: 570, c: 960, lunch: [720, 780] },
-  { n: 'Tokyo', tz: 'Asia/Tokyo', o: 540, c: 930, lunch: [690, 750] },
-];
-function localParts(tz) {
-  const p = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
-  const g = (t) => (p.find((x) => x.type === t) || {}).value;
-  return { wd: g('weekday'), h: +g('hour'), m: +g('minute') };
+/* ---------------- horaires des bourses (heure locale → heure d'Abidjan) ---------------- */
+const EXCH = {
+  'America/New_York': { n: 'New York', o: 570, c: 960 },
+  'America/Toronto': { n: 'Toronto', o: 570, c: 960 },
+  'Europe/Paris': { n: 'Paris', o: 540, c: 1050 },
+  'Europe/Amsterdam': { n: 'Amsterdam', o: 540, c: 1050 },
+  'Europe/Brussels': { n: 'Bruxelles', o: 540, c: 1050 },
+  'Europe/Berlin': { n: 'Francfort', o: 540, c: 1050 },
+  'Europe/Madrid': { n: 'Madrid', o: 540, c: 1050 },
+  'Europe/Rome': { n: 'Milan', o: 540, c: 1050 },
+  'Europe/Zurich': { n: 'Zurich', o: 540, c: 1050 },
+  'Europe/London': { n: 'Londres', o: 480, c: 990 },
+  'Asia/Hong_Kong': { n: 'Hong Kong', o: 570, c: 960, lunch: [720, 780] },
+  'Asia/Tokyo': { n: 'Tokyo', o: 540, c: 930, lunch: [690, 750] },
+  'Asia/Shanghai': { n: 'Shanghai', o: 570, c: 900, lunch: [690, 780] },
+};
+const STRIP = ['America/New_York', 'Europe/Paris', 'Europe/London', 'Europe/Berlin', 'Asia/Hong_Kong', 'Asia/Tokyo'];
+const PANEL = ['America/New_York', 'Europe/Paris', 'Europe/London', 'Europe/Berlin', 'Europe/Amsterdam', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Shanghai'];
+function tzOffset(tz, date) {
+  const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(date);
+  const g = (t) => +((p.find((x) => x.type === t) || {}).value || 0);
+  return Math.round((Date.UTC(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute'), g('second')) - date.getTime()) / 60000);
+}
+const hhmm = (m) => { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + 'h' + String(m % 60).padStart(2, '0'); };
+function fmtDur(min) {
+  min = Math.max(0, Math.ceil(min));
+  if (min < 60) return min + ' min';
+  const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
+  return d ? `${d} j ${h} h` : `${h} h ${String(m).padStart(2, '0')}`;
+}
+function abjDay(ms) { return new Date(ms).toISOString().slice(0, 10); } // Abidjan = GMT toute l'année
+function session(tz) {
+  const ex = EXCH[tz]; if (!ex) return null;
+  try {
+    const now = new Date(), off = tzOffset(tz, now);
+    const loc = new Date(now.getTime() + off * 60000);
+    const wd = loc.getUTCDay(), mins = loc.getUTCHours() * 60 + loc.getUTCMinutes() + loc.getUTCSeconds() / 60;
+    const wk = wd >= 1 && wd <= 5;
+    const times = (o) => ({ open: hhmm(ex.o - o), close: hhmm(ex.c - o), lunch: ex.lunch ? [hhmm(ex.lunch[0] - o), hhmm(ex.lunch[1] - o)] : null });
+    if (wk && mins >= ex.o && mins < ex.c) {
+      const r = Object.assign({ n: ex.n }, times(off));
+      if (ex.lunch && mins >= ex.lunch[0] && mins < ex.lunch[1]) { r.state = 'lunch'; r.until = ex.lunch[1] - mins; }
+      else { r.state = 'open'; r.until = ex.c - mins; }
+      return r;
+    }
+    let days = 0;
+    if (!(wk && mins < ex.o)) { days = 1; let w = (wd + 1) % 7; while (w === 0 || w === 6) { days++; w = (w + 1) % 7; } }
+    let until = days * 1440 + ex.o - mins;
+    const offN = tzOffset(tz, new Date(now.getTime() + until * 60000)); // tient compte d'un changement d'heure
+    until += off - offN;
+    const at = now.getTime() + until * 60000;
+    const dd = (Date.parse(abjDay(at)) - Date.parse(abjDay(now.getTime()))) / 86400000;
+    const when = dd === 0 ? 'aujourd’hui' : dd === 1 ? 'demain' : new Date(at).toLocaleDateString('fr-FR', { weekday: 'long', timeZone: 'UTC' });
+    return Object.assign({ n: ex.n, state: 'closed', until, when }, times(offN));
+  } catch (e) { return null; }
 }
 function renderMarkets() {
-  const ab = localParts('Africa/Abidjan');
-  let h = `<span class="mk" title="Heure d’Abidjan (GMT)"><b>Abidjan</b> <span class="num">${String(ab.h).padStart(2, '0')}:${String(ab.m).padStart(2, '0')}</span></span>`;
-  for (const m of MARKETS) {
-    let st = 'off', lbl = 'fermé';
-    try {
-      const p = localParts(m.tz);
-      const mins = p.h * 60 + p.m;
-      const wk = p.wd !== 'Sat' && p.wd !== 'Sun';
-      if (wk && mins >= m.o && mins < m.c) {
-        if (m.lunch && mins >= m.lunch[0] && mins < m.lunch[1]) { st = 'pause'; lbl = 'pause déjeuner'; }
-        else { st = 'on'; lbl = 'ouvert'; }
-      }
-    } catch (e) {}
-    h += `<span class="mk" title="${m.n} : ${lbl} (horaires indicatifs, jours fériés non pris en compte)"><span class="dot ${st}"></span>${m.n}</span>`;
+  const now = fmtTime(Date.now() / 1000, 'Africa/Abidjan', { hour: '2-digit', minute: '2-digit' });
+  let h = `<button class="mk btn" id="hoursBtn" type="button" title="Horaires des bourses en heure d’Abidjan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Horaires</button>`;
+  h += `<span class="mk" title="Heure d’Abidjan (GMT)"><b>Abidjan</b> <span class="num">${now}</span></span>`;
+  for (const tz of STRIP) {
+    const se = session(tz);
+    const st = !se ? '' : se.state === 'open' ? 'on' : se.state === 'lunch' ? 'pause' : '';
+    const lbl = !se ? '' : se.state === 'open' ? `ouvert, ferme dans ${fmtDur(se.until)}` : se.state === 'lunch' ? `pause, reprise dans ${fmtDur(se.until)}` : `fermé, ouvre dans ${fmtDur(se.until)}`;
+    h += `<span class="mk" title="${EXCH[tz].n} : ${lbl}"><span class="dot ${st}"></span>${EXCH[tz].n}</span>`;
   }
   $('#markets').innerHTML = h;
+}
+function renderHours() {
+  const box = $('#hbox'); if (!box || !$('#hours').classList.contains('show')) return;
+  const rows = PANEL.map((tz) => {
+    const se = session(tz); if (!se) return '';
+    const st = se.state === 'open' ? ['on', `Ouvert · ferme dans ${fmtDur(se.until)}`]
+      : se.state === 'lunch' ? ['pause', `Pause déjeuner · reprise dans ${fmtDur(se.until)}`]
+      : ['', `Fermé · ouvre ${se.when} à ${se.open} (dans ${fmtDur(se.until)})`];
+    return `<div class="hrow"><span class="dot ${st[0]}"></span><b>${se.n}</b><span class="num hh">${se.open} – ${se.close}</span><span class="hs ${st[0] === 'on' ? 'up' : ''}">${st[1]}</span>${se.lunch ? `<span class="hl">Pause de ${se.lunch[0]} à ${se.lunch[1]}</span>` : ''}</div>`;
+  }).join('');
+  box.innerHTML = `<div class="hhead"><div><b>Horaires des bourses</b><span>en heure d’Abidjan (GMT)</span></div><button type="button" id="hoursClose" aria-label="Fermer">✕</button></div>${rows}
+    <div class="hnote">Horaires ajustés automatiquement aux changements d’heure (Europe, États-Unis). Jours fériés non pris en compte. Cours en général quasi temps réel pour les États-Unis, différés d’environ 15 min ailleurs.</div>`;
+}
+function toggleHours(show) {
+  const h = $('#hours'); if (!h) return;
+  show = show === undefined ? !h.classList.contains('show') : show;
+  h.classList.toggle('show', show);
+  if (show) renderHours();
 }
 
 /* ---------------- moteur d'analyse ---------------- */
@@ -519,6 +598,7 @@ async function load(q, opt = {}) {
     if (!j.history || !j.history.c || j.history.c.length < 2) throw new Error('Données insuffisantes pour cette action.');
     const keepRange = S.data && S.data.symbol === j.symbol;
     S.data = j;
+    S.liveAt = Date.now();
     if (!keepRange) { S.range = '6M'; S.hover = null; }
     prep();
     render(performance.now() - t0);
@@ -557,13 +637,6 @@ function renderError(q, msg) {
 /* ---------------- rendu ---------------- */
 function render(ms) {
   const d = S.data, H = d.history, n = H.c.length, I = S.ind;
-  const chg = ok(d.prevClose) ? d.price - d.prevClose : NaN;
-  const chgP = ok(d.prevClose) && d.prevClose ? chg / d.prevClose : NaN;
-  const xof = ok(d.toXof) ? d.price * d.toXof : NaN;
-  const tz = d.timezone || 'UTC';
-  const city = tz.split('/').pop().replace(/_/g, ' ');
-  const t = d.marketTime;
-  const when = t ? `${fmtTime(t, tz, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} (${esc(city)}) · ${fmtTime(t, 'Africa/Abidjan', { hour: '2-digit', minute: '2-digit' })} à Abidjan` : '';
 
   const quote = `<div class="card">
     <div class="q-top">
@@ -574,16 +647,10 @@ function render(ms) {
       </div>
       <button class="icon-btn" id="refresh" title="Actualiser" aria-label="Actualiser"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
     </div>
-    <div class="q-price"><span class="px num">${px(d.price)}</span><span class="cur">${esc(curLabel(d.currency))}</span>
-      <span class="chg num ${cls(chg)}">${ok(chg) ? (chg > 0 ? '+' : '') + px(chg) + ' (' + pct(chgP) + ')' : ''}</span></div>
-    ${ok(xof) ? `<div class="q-xof num">≈ ${nf(xof, 0)} FCFA</div>` : ''}
-    <div class="q-meta"><span class="dot ${d.marketOpen ? 'on' : ''}"></span>${d.marketOpen ? 'Marché ouvert' : 'Marché fermé'}${when ? ' · cours du ' + when : ''} · différé possible</div>
-    <div class="stats">
-      <div class="stat"><div class="k">Jour bas / haut</div><div class="v num">${px(d.dayLow)} – ${px(d.dayHigh)}</div></div>
-      <div class="stat"><div class="k">52 semaines</div><div class="v num">${px(d.low52)} – ${px(d.high52)}</div></div>
-      <div class="stat"><div class="k">Volume</div><div class="v num">${big(d.volume)}</div></div>
-      <div class="stat"><div class="k">Capitalisation</div><div class="v num">${d.fundamentals && ok(d.fundamentals.marketCap) ? big(d.fundamentals.marketCap) + ' ' + esc(d.currency) : '—'}</div></div>
-    </div>
+    <div class="q-price"><span class="px num" id="qPx"></span><span class="cur">${esc(curLabel(d.currency))}</span><span class="chg num" id="qChg"></span></div>
+    <div class="q-xof num" id="qXof"></div>
+    <div class="q-meta" id="qStatus"></div>
+    <div class="stats" id="qStats"></div>
     <div class="speed">⚡ Analyse complète en <b class="num">${nf(ms / 1000, 2)} s</b> · ${n} séances étudiées</div>
   </div>`;
 
@@ -600,6 +667,7 @@ function render(ms) {
   $('#out').innerHTML = `<div class="grid">${quote}<div class="card" id="sigCard"></div>${chart}
     ${tilesCard()}${analystCard()}${newsCard()}${profileCard()}</div>`;
 
+  updateQuote(null);
   renderSignal();
   drawCharts();
 }
@@ -710,7 +778,7 @@ function tilesCard() {
   if (sinceStart) per.push(['Depuis cotation', p / c[0] - 1]); else add('5 ans', n - 1);
   const perf = per.map(([k, v]) => `<div><div class="k">${k}</div><div class="v num ${cls(v)}">${pct(v, 1)}</div></div>`).join('');
 
-  return `<div class="card"><h3>Indicateurs techniques</h3><div class="tiles">${tiles}</div>
+  return `<div class="card" id="tilesCard"><h3>Indicateurs techniques</h3><div class="tiles">${tiles}</div>
     <h3 style="margin-top:20px">Performances</h3><div class="perf">${perf}</div></div>`;
 }
 
@@ -899,6 +967,9 @@ function endHover() { S.hover = null; const t = $('#tip'); if (t) t.style.displa
 
 /* ---------------- événements ---------------- */
 document.addEventListener('click', (e) => {
+  if (e.target.closest('#hoursClose')) { toggleHours(false); return; }
+  if (e.target.closest('#markets')) { toggleHours(); return; }
+  if (!e.target.closest('#hbox')) toggleHours(false);
   const chip = e.target.closest('[data-sym]');
   if (chip) { e.preventDefault(); $('#q').value = chip.dataset.sym; load(chip.dataset.sym); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const rg = e.target.closest('#ranges button');
@@ -939,11 +1010,100 @@ let rzT = null;
 window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(drawCharts, 80); });
 window.addEventListener('hashchange', () => { const h = decodeURIComponent(location.hash.slice(1)); if (h && (!S.data || S.data.symbol !== h)) load(h); });
 
-// actualisation automatique toutes les 60 s quand le marché est ouvert
+/* ---------------- mode Direct ---------------- */
+function quoteStats(d) {
+  return `<div class="stat"><div class="k">Jour bas / haut</div><div class="v num">${px(d.dayLow)} – ${px(d.dayHigh)}</div></div>
+    <div class="stat"><div class="k">52 semaines</div><div class="v num">${px(d.low52)} – ${px(d.high52)}</div></div>
+    <div class="stat"><div class="k">Volume</div><div class="v num">${big(d.volume)}</div></div>
+    <div class="stat"><div class="k">Capitalisation</div><div class="v num">${d.fundamentals && ok(d.fundamentals.marketCap) ? big(d.fundamentals.marketCap) + ' ' + esc(d.currency) : '—'}</div></div>`;
+}
+function updateQuote(old) {
+  const d = S.data, el = $('#qPx'); if (!d || !el) return;
+  const chg = ok(d.prevClose) ? d.price - d.prevClose : NaN;
+  const chgP = ok(chg) && d.prevClose ? chg / d.prevClose : NaN;
+  const xof = ok(d.toXof) ? d.price * d.toXof : NaN;
+  el.textContent = px(d.price);
+  if (ok(old) && d.price !== old) { el.classList.remove('flash-up', 'flash-down'); void el.offsetWidth; el.classList.add(d.price > old ? 'flash-up' : 'flash-down'); }
+  const c = $('#qChg'); c.className = 'chg num ' + cls(chg);
+  c.textContent = ok(chg) ? (chg > 0 ? '+' : '') + px(chg) + ' (' + pct(chgP) + ')' : '';
+  $('#qXof').textContent = ok(xof) ? '≈ ' + nf(xof, 0) + ' FCFA' : '';
+  $('#qStats').innerHTML = quoteStats(d);
+  updateStatus();
+  document.title = `${d.symbol} ${px(d.price)} — FuriousX`;
+}
+function updateStatus() {
+  const el = $('#qStatus'), d = S.data; if (!el || !d) return;
+  const tz = d.timezone || 'UTC', se = session(tz);
+  const city = se ? se.n : tz.split('/').pop().replace(/_/g, ' ');
+  const delay = /^America\//.test(tz) ? 'cours en général quasi temps réel' : 'cours différé d’environ 15 min';
+  const t = d.marketTime;
+  const last = t ? `${fmtTime(t, tz, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} (${esc(city)}) · ${fmtTime(t, 'Africa/Abidjan', { hour: '2-digit', minute: '2-digit' })} à Abidjan` : '';
+  let h;
+  if (d.marketOpen) {
+    const age = Math.max(0, Math.round((Date.now() - (S.liveAt || Date.now())) / 1000));
+    h = `<span class="live"><i></i>EN DIRECT</span>mis à jour il y a ${age} s · ${delay}`;
+    if (se && se.state === 'open') h += `<div class="cd">⏱ Clôture de ${esc(se.n)} dans <b>${fmtDur(se.until)}</b>, à ${se.close} (heure d’Abidjan)</div>`;
+    else if (se && se.state === 'lunch') h += `<div class="cd">🍽 Pause déjeuner à ${esc(se.n)}, reprise dans <b>${fmtDur(se.until)}</b></div>`;
+  } else {
+    h = `<span class="dot"></span>Marché fermé · dernier cours : ${last}`;
+    if (se && se.state === 'closed') h += `<div class="cd">⏰ Ouverture de ${esc(se.n)} dans <b>${fmtDur(se.until)}</b>, ${se.when} à ${se.open} (heure d’Abidjan)</div>`;
+    else if (se && se.state === 'lunch') h += `<div class="cd">🍽 Pause déjeuner à ${esc(se.n)}, reprise dans <b>${fmtDur(se.until)}</b></div>`;
+    else if (se) h += `<div class="cd">⏳ La séance de ${esc(se.n)} devrait être ouverte : connexion au direct… (jour férié possible)</div>`;
+  }
+  el.innerHTML = h;
+}
+function dayKey(ts, tz) { return fmtTime(ts, tz, { year: 'numeric', month: '2-digit', day: '2-digit' }); }
+function applyLive(j) {
+  const d = S.data, old = d.price;
+  d.price = j.price;
+  if (ok(j.prevClose)) d.prevClose = j.prevClose;
+  if (j.marketTime) d.marketTime = j.marketTime;
+  d.marketOpen = !!j.marketOpen;
+  if (ok(j.dayHigh)) d.dayHigh = j.dayHigh;
+  if (ok(j.dayLow)) d.dayLow = j.dayLow;
+  if (ok(j.volume)) d.volume = j.volume;
+  if (j.intraday) d.intraday = j.intraday;
+  if (d.intraday && d.intraday.c.length) { // le dernier point du graphique 1J colle au prix en direct
+    const it = d.intraday, k = it.c.length - 1;
+    if (j.marketTime && j.marketTime > it.t[k] + 30) { it.t.push(j.marketTime); it.c.push(j.price); } else it.c[k] = j.price;
+  }
+  const H = d.history, n = H.c.length, tz = d.timezone || 'UTC';
+  if (j.marketTime && dayKey(H.t[n - 1], tz) === dayKey(j.marketTime, tz)) {
+    H.c[n - 1] = j.price; H.h[n - 1] = Math.max(H.h[n - 1], j.price); H.l[n - 1] = Math.min(H.l[n - 1], j.price);
+  } else if (j.marketTime && j.marketTime > H.t[n - 1]) {
+    H.t.push(j.marketTime); H.c.push(j.price); H.h.push(ok(j.dayHigh) ? j.dayHigh : j.price); H.l.push(ok(j.dayLow) ? j.dayLow : j.price); H.v.push(j.volume || 0);
+  }
+  S.liveAt = Date.now();
+  prep();
+  updateQuote(old);
+  renderSignal();
+  const tc = $('#tilesCard'); if (tc) tc.outerHTML = tilesCard();
+  drawCharts();
+}
+let liveBusy = false;
+async function tickLive() {
+  const d = S.data; if (!d || S.busy || liveBusy || document.visibilityState !== 'visible') return;
+  const se = session(d.timezone);
+  if (!d.marketOpen && !(se && se.state !== 'closed')) return; // bourse fermée : inutile d'interroger
+  liveBusy = true;
+  try {
+    const r = await fetch('/api/stock?live=' + encodeURIComponent(d.symbol));
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j || j.error || !S.data || j.symbol !== S.data.symbol || !ok(j.price)) return;
+    applyLive(j);
+  } catch (e) {} finally { liveBusy = false; }
+}
+let tick = 0;
 setInterval(() => {
-  renderMarkets();
-  if (S.data && S.data.marketOpen && document.visibilityState === 'visible') load(S.data.symbol, { silent: true });
-}, 60000);
+  tick++;
+  updateStatus();
+  renderHours();
+  if (tick % 15 === 0) renderMarkets();
+  if (tick % 10 === 0) tickLive(); // cours actualisé toutes les 10 s quand la bourse est ouverte
+  if (tick % 900 === 0 && S.data && S.data.marketOpen && document.visibilityState === 'visible') load(S.data.symbol, { silent: true }); // actualités etc. toutes les 15 min
+}, 1000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { renderMarkets(); tickLive(); } });
 
 /* ---------------- démarrage ---------------- */
 renderMarkets();
