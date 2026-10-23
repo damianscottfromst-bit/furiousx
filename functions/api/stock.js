@@ -6,6 +6,8 @@
 //  /api/stock?suggest=tesla → suggestions pendant la frappe
 //  /api/stock?live=SPCX     → mode Direct : cours + séance du jour (léger, 5 s)
 //  /api/stock?brvm=board    → tableau de toutes les actions de la BRVM + indices
+//  /api/stock?watch=A,B@BRVM → cours de plusieurs valeurs d'un coup (alertes)
+//  /api/stock?sw=1          → petit service worker pour les notifications
 //
 //  Sources : Yahoo Finance (bourses internationales) ;
 //            brvm.org (cours officiels BRVM), sikafinance.com (historique BRVM),
@@ -395,7 +397,7 @@ async function sikaWindow(ticker, from, to, ttl) {
       Origin: 'https://www.sikafinance.com', Referer: 'https://www.sikafinance.com/marches/historiques/' + ticker,
     },
     body: JSON.stringify({ ticker, datedeb: from, datefin: to, xperiod: '0' }),
-  }), 7000);
+  }), 4500);
   if (!r.ok) throw new Error('sika HTTP ' + r.status);
   const j = await r.json();
   const lst = (j && (j.lst || j.Lst || j.data)) || [];
@@ -446,10 +448,23 @@ async function brvmHistory(ticker, windows = 12) {
   return rows;
 }
 
+const histMem = new Map(); // évite de tout retélécharger à chaque analyse
+async function brvmHistoryCached(ticker, windows) {
+  const key = `${ticker}|${windows}|${Math.floor(Date.now() / 86400000)}`;
+  const m = histMem.get(key);
+  if (m && Date.now() - m.at < 10 * 60000) return m.rows.map((r) => ({ ...r }));
+  const rows = await brvmHistory(ticker, windows);
+  if (rows.length > 1) {
+    histMem.set(key, { at: Date.now(), rows });
+    if (histMem.size > 80) histMem.delete(histMem.keys().next().value);
+  }
+  return rows.map((r) => ({ ...r }));
+}
+
 // ---------- actualités en français : Google Actualités ----------
 async function gnews(q) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=fr&gl=CI&ceid=CI:fr`;
-  const r = await timeout(fetch(url, { headers: { 'User-Agent': UA }, cf: { cacheTtl: 900, cacheEverything: true } }), 4000);
+  const r = await timeout(fetch(url, { headers: { 'User-Agent': UA }, cf: { cacheTtl: 900, cacheEverything: true } }), 3000);
   if (!r.ok) return [];
   const xml = await r.text();
   return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 10).map((m) => {
@@ -465,22 +480,22 @@ async function gnews(q) {
 async function brvmNews(info) {
   if (info.index) return (await gnews('BRVM bourse Abidjan').catch(() => [])).slice(0, 8);
   const short = info.aliases.find((a) => !a.includes(' ')) || info.name;
-  let items = await gnews(`${short} BRVM`).catch(() => []);
-  if (items.length < 3) {
-    const more = await gnews(`"${info.name}"`).catch(() => []);
-    for (const n of more) if (!items.some((x) => x.title === n.title)) items.push(n);
-  }
+  const [a, b] = await Promise.all([gnews(`${short} BRVM`).catch(() => []), gnews(`"${info.name}"`).catch(() => [])]);
+  const items = a.slice();
+  for (const n of b) if (!items.some((x) => x.title === n.title)) items.push(n);
   return items.sort((a, b) => (b.time || 0) - (a.time || 0)).slice(0, 8);
 }
 
 // ---------- analyse complète d'une valeur BRVM ----------
-async function analyseBRVM(info) {
+async function analyseBRVM(info, fast) {
   const t0 = Date.now();
   const ticker = info.index ? info.symbol : `${info.symbol}.${info.country}`;
+  // mode rapide : 6 mois d'historique et pas d'actualités → affichage immédiat ;
+  // l'application demande ensuite l'analyse complète (3 ans + actualités) en arrière-plan
   const [tabR, histR, newsR] = await Promise.allSettled([
     info.index ? Promise.resolve(null) : brvmTable(),
-    brvmHistory(ticker),
-    brvmNews(info),
+    brvmHistoryCached(ticker, fast ? 2 : 12),
+    fast ? Promise.resolve([]) : brvmNews(info),
   ]);
   const rows = histR.status === 'fulfilled' ? histR.value : [];
   const row = tabR.status === 'fulfilled' && tabR.value ? tabR.value.rows.find((r) => r.symbol === info.symbol) : null;
@@ -531,6 +546,7 @@ async function analyseBRVM(info) {
     events: null,
     alternatives: [...BRVM.values()].filter((x) => x.symbol !== info.symbol && x.index === info.index && x.sector === info.sector)
       .slice(0, 4).map((x) => ({ symbol: x.symbol, name: x.name, exch: 'BRVM' })),
+    partial: !!fast,
     serverMs: Date.now() - t0,
   };
 }
@@ -573,11 +589,11 @@ async function brvmBoard() {
 }
 
 // ---------- analyse complète ----------
-async function analyse(q) {
+async function analyse(q, fast) {
   const t0 = Date.now();
   const query = q.trim();
   const brvmInfo = brvmResolve(query); // Sonatel, SAPH, SNTS, SPHC… → BRVM
-  if (brvmInfo) return analyseBRVM(brvmInfo);
+  if (brvmInfo) return analyseBRVM(brvmInfo, fast);
   const guess = query.toUpperCase().replace(/\s+/g, '');
   const looksLikeTicker = /^[A-Z0-9.\-=^]{1,15}$/.test(guess);
 
@@ -716,6 +732,43 @@ async function live(symbol, exchange) {
   };
 }
 
+// ---------- cours de plusieurs valeurs d'un coup (surveillance des alertes) ----------
+async function watch(list) {
+  const syms = list.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 30);
+  const quotes = await Promise.all(syms.map(async (key) => {
+    try {
+      if (key.endsWith('@BRVM')) {
+        const info = brvmResolve(key.slice(0, -5));
+        if (!info) throw new Error('inconnu');
+        return Object.assign({ key, currency: info.index ? '' : 'XOF' }, await liveBRVM(info));
+      }
+      const res = await chart(key, '1d', '1d', 20);
+      const m = res.meta, ctp = m.currentTradingPeriod && m.currentTradingPeriod.regular, nowS = Date.now() / 1000;
+      return {
+        key, symbol: m.symbol, currency: m.currency || '', price: m.regularMarketPrice ?? null,
+        prevClose: m.chartPreviousClose ?? m.previousClose ?? null, marketTime: m.regularMarketTime || null,
+        marketOpen: !!(ctp && nowS >= ctp.start && nowS <= ctp.end),
+        dayHigh: m.regularMarketDayHigh ?? null, dayLow: m.regularMarketDayLow ?? null,
+      };
+    } catch (e) {
+      return { key, error: true };
+    }
+  }));
+  return { quotes };
+}
+
+const SW_CODE = `// FuriousX — service worker minimal : affiche les notifications d'alerte
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if ('focus' in c) { c.postMessage({ type: 'open', url }); return c.focus(); } }
+    return self.clients.openWindow(url);
+  }));
+});`;
+
 async function suggest(q) {
   const local = brvmSuggest(q);
   let remote = [];
@@ -737,6 +790,9 @@ async function suggest(q) {
 export async function onRequestGet(context) {
   const { request } = context;
   const url = new URL(request.url);
+  if (url.searchParams.has('sw')) {
+    return new Response(SW_CODE, { headers: { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'no-cache' } });
+  }
   const cache = typeof caches !== 'undefined' ? caches.default : null;
   const key = new Request(url.toString(), { method: 'GET' });
 
@@ -752,6 +808,9 @@ export async function onRequestGet(context) {
       if (!sym || sym.length > 20) throw new HttpError(400, 'Symbole manquant.');
       body = await live(sym, url.searchParams.get('x') || '');
       ttl = 5;
+    } else if (url.searchParams.has('watch')) {
+      body = await watch(url.searchParams.get('watch') || '');
+      ttl = 20;
     } else if (url.searchParams.has('brvm')) {
       body = await brvmBoard();
       ttl = 60;
@@ -763,7 +822,7 @@ export async function onRequestGet(context) {
       const q = (url.searchParams.get('q') || '').trim();
       if (!q) throw new HttpError(400, 'Entrez le symbole ou le nom d’une action.');
       if (q.length > 60) throw new HttpError(400, 'Recherche trop longue.');
-      body = await analyse(q);
+      body = await analyse(q, url.searchParams.get('fast') === '1');
     }
   } catch (e) {
     status = e.status || 502;
